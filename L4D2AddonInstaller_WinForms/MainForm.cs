@@ -1,0 +1,670 @@
+﻿using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace L4D2AddonInstaller_WinForms
+{
+    public partial class MainForm : Form
+    {
+        public MainForm()
+        {
+            InitializeComponent();
+            textBoxServerInfo.ReadOnly = true;
+            textBoxConsoleCmd.ReadOnly = true;
+            textBoxServerInfo.BackColor = SystemColors.Control; // 禁用编辑背景色
+            textBoxConsoleCmd.BackColor = SystemColors.Control;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle; // 禁止调整窗口大小
+            string appVersion = Application.ProductVersion;
+            string appTitle = "《求生之路 2》附加组件安装器 v" + appVersion;
+            this.Text = appTitle;
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // 让用户确认是否要退出程序
+            DialogResult result = MessageBox.Show("是否要退出程序？", "提示",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (result == DialogResult.OK)
+                base.OnFormClosing(e);
+            else { this.Show(); e.Cancel = true; }; // 取消关闭，继续显示窗口
+        }
+
+        /// <summary>
+        /// 处理L4D2路径浏览按钮的Click事件，允许用户选择《求生之路2》（Left 4 Dead 2）的安装目录。
+        /// </summary>
+        /// <remarks>当用户选择文件夹并确认对话框后，所选路径会被赋值到游戏路径文本框中。
+        /// 该对话框禁止创建新文件夹。</remarks>
+        /// <param name="sender">事件源（通常为浏览按钮控件）。</param>
+        /// <param name="e">包含事件数据的EventArgs对象。</param>
+        private void btnL4d2PathBrowse_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog l4d2FolderDialog = new FolderBrowserDialog())
+            {
+                l4d2FolderDialog.Description = "选择《求生之路 2》的安装文件夹（例如：C:\\Program Files (x86)\\Steam\\steamapps\\common\\Left 4 Dead 2）";
+                l4d2FolderDialog.ShowNewFolderButton = false;
+                if (l4d2FolderDialog.ShowDialog() == DialogResult.OK)
+                {
+                    textBox1GamePath.Text = l4d2FolderDialog.SelectedPath;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理Steam路径浏览按钮的Click事件，允许用户选择Steam的安装目录。
+        /// </summary>
+        /// <remarks>打开文件夹浏览对话框供用户选择Steam目录。
+        /// 若用户确认选择，所选路径会被赋值到Steam路径文本框中。</remarks>
+        /// <param name="sender">事件源（通常为浏览按钮控件）。</param>
+        /// <param name="e">包含事件数据的EventArgs对象。</param>
+        private void btnSteamPathBrowse_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog steamFolderDialog = new FolderBrowserDialog())
+            {
+                steamFolderDialog.Description = "选择 Steam 安装文件夹（例如：C:\\Program Files (x86)\\Steam）";
+                steamFolderDialog.ShowNewFolderButton = false;
+                if (steamFolderDialog.ShowDialog() == DialogResult.OK)
+                {
+                    textBox2SteamPath.Text = steamFolderDialog.SelectedPath;
+                }
+            }
+        }
+
+        // 一键检索Steam和L4D2路径
+        /// <summary>
+        /// 处理“一键检索！”按钮的点击事件，自动检测并设置 Steam 及《求生之路2》（Left 4 Dead 2）的安装路径。
+        /// </summary>
+        /// <remarks>若无法检测到 Steam 安装路径，将显示提示信息告知用户。
+        /// 检测过程中该按钮会被临时禁用，以防止重复点击。</remarks>
+        /// <param name="sender">事件源（通常为“检测所有路径”按钮）。</param>
+        /// <param name="e">包含事件数据的 EventArgs 实例。</param>
+        private void btnDetectAllPath_Click(object sender, EventArgs e)
+        {
+            btnDetectAllPath.Enabled = false;
+            try
+            {
+                btnSteamPath_Click(sender, e);
+                if (!string.IsNullOrEmpty(textBox2SteamPath.Text.Trim()))
+                    btnGamePath_Click(sender, e);
+                else
+                {
+                    MessageBox.Show("未检索到 Steam 安装路径。", "提示",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            finally
+            {
+                btnDetectAllPath.Enabled = true;
+            }
+        }
+
+        // 检索Steam路径
+        /// <summary>
+        /// Retrieves the installation path of the Steam client from the Windows registry.
+        /// </summary>
+        /// <remarks>This method checks both the current user and local machine registry hives for the
+        /// Steam installation path. The returned path may be normalized to use single backslashes. This method does not
+        /// validate whether the path exists on disk.</remarks>
+        /// <returns>A string containing the Steam installation path if found; otherwise, null.</returns>
+        public string GetSteamPath()
+        {
+            string steamPath = null;
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\\Valve\\Steam"))
+            {
+                if (key != null)
+                {
+                    steamPath = key.GetValue("SteamPath")?.ToString();
+                }
+            }
+            if (string.IsNullOrEmpty(steamPath))
+            {
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"Software\\Valve\\Steam"))
+                {
+                    if (key != null)
+                    {
+                        steamPath = key.GetValue("SteamPath")?.ToString();
+                    }
+                }
+            }
+            if (!string.IsNullOrEmpty(steamPath))
+            {
+                steamPath = steamPath.Replace("\\\\", "\\");
+            }
+
+            return steamPath;
+        }
+
+        /// <summary>
+        /// Handles the Click event for the Steam Path selection button, automatically detecting and displaying the
+        /// Steam installation path if found.
+        /// </summary>
+        /// <remarks>If the Steam installation path cannot be detected or does not exist, a message box is
+        /// displayed to inform the user. The detected path is shown in the associated text box if valid.</remarks>
+        /// <param name="sender">The source of the event, typically the button that was clicked.</param>
+        /// <param name="e">An EventArgs instance containing event data.</param>
+        private void btnSteamPath_Click(object sender, EventArgs e)
+        {
+            string steamPath = GetSteamPath();
+            if (string.IsNullOrEmpty(steamPath))
+            {
+                MessageBox.Show("未找到 Steam 的安装路径，请尝试手动输入/选择", "提示",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (!Directory.Exists(steamPath))
+            {
+                MessageBox.Show($"Steam 安装路径不存在：\n{steamPath}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            textBox2SteamPath.Text = Path.GetFullPath(steamPath);
+        }
+
+        /// <summary>
+        /// Handles the click event for the game path selection button, automatically locates and sets the installation
+        /// path of Left 4 Dead 2 based on the configured Steam installation directory.
+        /// </summary>
+        /// <remarks>If the Steam installation path or required files are missing, or if Left 4 Dead 2 is
+        /// not found, an informational or error message is displayed to the user. The method does not throw exceptions
+        /// to the caller; all errors are handled and reported via message dialogs.</remarks>
+        /// <param name="sender">The source of the event, typically the button control that was clicked.</param>
+        /// <param name="e">An EventArgs object containing data related to the click event.</param>
+        private void btnGamePath_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string steamInstallPath = textBox2SteamPath.Text.Trim();
+                if (string.IsNullOrEmpty(steamInstallPath))
+                {
+                    MessageBox.Show("请先设置 Steam 的安装路径。", "提示",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                if (!Directory.Exists(steamInstallPath))
+                {
+                    MessageBox.Show($"Steam 安装路径不存在：\n{steamInstallPath}", "错误",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                string libraryVdfPath = Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf");
+                if (!File.Exists(libraryVdfPath))
+                {
+                    MessageBox.Show($"未找到 Steam 的 libraryfolders.vdf 文件\n路径：{libraryVdfPath}", "提示",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                string l4d2LibraryPath = SteamLibraryVdfParser.GetLibraryPathByGameId(libraryVdfPath, "550");
+                if (string.IsNullOrEmpty(l4d2LibraryPath))
+                {
+                    MessageBox.Show("未找到 L4D2 的安装路径，请确认游戏已安装到该 Steam 库。", "提示",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                string l4d2Path = Path.Combine(l4d2LibraryPath, "steamapps", "common", "Left 4 Dead 2");
+                if (Directory.Exists(l4d2Path))
+                {
+                    textBox1GamePath.Text = l4d2Path;
+                }
+                else
+                {
+                    MessageBox.Show($"解析到 L4D2 的安装路径但未找到：\n{l4d2Path}", "警告",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox1GamePath.Text = l4d2Path;
+                    return;
+                }
+            }
+            catch (FileNotFoundException ex)
+            {
+                MessageBox.Show($"文件未找到：{ex.FileName}\n{ex.Message}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show($"文件读取失败：{ex.Message}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show($"参数错误：{ex.Message}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"检索 L4D2 路径时出错: {ex.Message}", "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// 下载列表的远程URL地址
+        /// </summary>
+        private const string DownloadListUrl = "https://furina.dakang233.com:8443/www/l4d2/download.txt";
+
+        /// <summary>
+        /// 处理代号下载按钮的点击事件：验证用户输入、获取对应的下载配置，
+        /// 并异步下载《求生之路2》（Left 4 Dead 2）所需的插件。
+        /// </summary>
+        /// <remarks>此方法在启动下载流程前，会对代号和游戏路径执行输入验证。
+        /// 它从远程源获取插件配置、构建下载URL，并并发下载插件。
+        /// 整个操作过程中会更新UI以反映进度和状态。
+        /// 若勾选了“自动启动游戏”选项，游戏会在安装成功后自动启动。
+        /// 针对无效输入、配置异常或下载失败等情况，会向用户显示错误提示信息。</remarks>
+        /// <param name="sender">事件源（通常为被点击的按钮）。</param>
+        /// <param name="e">包含事件数据的 EventArgs 对象。</param>
+        private async void btnCodeName_Click(object sender, EventArgs e)
+        {
+            // 1. 前置校验
+            var code = textBox3CodeName.Text.Trim();
+            if (string.IsNullOrEmpty(code))
+            {
+                MessageBox.Show("请输入下载代号（如1、231）", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (string.IsNullOrEmpty(textBox1GamePath.Text.Trim()))
+            {
+                MessageBox.Show("请先检索/选择L4D2安装路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 2. 初始化UI状态
+            btnCodeName.Enabled = false;
+            pbDownloadProgress.Value = 0;
+            lblDownloadStatus.Text = "正在获取下载配置...";
+            textBoxServerInfo.Text = "";
+            textBoxConsoleCmd.Text = "";
+            labelDownloadPercent.Text = "0%";
+
+            try
+            {
+                // 3. 异步获取download.list
+                var downloadListContent = await HttpHelper.GetRemoteTextAsync(DownloadListUrl);
+                if (string.IsNullOrEmpty(downloadListContent))
+                {
+                    lblDownloadStatus.Text = "下载配置为空";
+                    return;
+                }
+
+                // 4. 解析代号对应的配置
+                var addonConfig = SteamLibraryVdfParser.GetAddonConfigByCode(downloadListContent, code);
+                if (addonConfig == null)
+                {
+                    lblDownloadStatus.Text = "未找到该代号的配置";
+                    MessageBox.Show($"未找到代号「{code}」的下载配置", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 5. 提取服务器信息
+                var gameServerHost = addonConfig.TryGetValue("gameServerHost", out var hostObj) ? hostObj.ToString() : "";
+                var gameServerPort = addonConfig.TryGetValue("gameServerPort", out var portObj) ? portObj.ToString() : "";
+                var webServer = addonConfig.TryGetValue("webServer", out var webHostObj) ? webHostObj.ToString() : "";
+                var webPort = addonConfig.TryGetValue("port", out var webPortObj) ? webPortObj.ToString() : "";
+                var protocol = addonConfig.TryGetValue("protocol", out var protoObj) ? protoObj.ToString() : "https";
+                var prefix = addonConfig.TryGetValue("prefix", out var prefixObj) ? prefixObj.ToString() : "";
+
+                // 展示服务器信息
+                if (gameServerPort == "27015")
+                {
+                    textBoxServerInfo.Text = $"{gameServerHost}";
+                    textBoxConsoleCmd.Text = $"connect {gameServerHost}";
+                }
+                else
+                {
+                    textBoxServerInfo.Text = $"{gameServerHost}:{gameServerPort}";
+                    textBoxConsoleCmd.Text = $"connect {gameServerHost}:{gameServerPort}";
+                }
+
+                // 6. 提取addons列表并拼接下载URL
+                var addonPaths = SteamLibraryVdfParser.GetAddonPathsFromConfig(addonConfig);
+                if (!addonPaths.Any())
+                {
+                    lblDownloadStatus.Text = "该代号无需要下载的附加组件";
+                    MessageBox.Show("该代号无需要下载的附加组件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 规范化并构造最终下载项（包含 Uri 与 本地保存路径），避免手工字符串拼接导致错误
+                var downloadItems = new List<Tuple<Uri, string, string>>(); // (uri, fileName, savePath)
+                var skipped = new List<string>();
+                Uri baseUri = null;
+                try
+                {
+                    baseUri = new Uri($"{protocol}://{webServer}:{webPort}/");
+                }
+                catch
+                {
+                    MessageBox.Show("构造服务器地址失败，请检查 webServer、port 与 protocol 配置", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var normalizedPrefix = (prefix ?? string.Empty).Trim().Trim('/');
+                foreach (var path in addonPaths)
+                {
+                    if (string.IsNullOrWhiteSpace(path))
+                    {
+                        skipped.Add(path);
+                        continue;
+                    }
+                    var p = path.Trim();
+
+                    try
+                    {
+                        Uri finalUri;
+                        if (p.Contains("://"))
+                        {
+                            // 已经是完整 URL
+                            finalUri = new Uri(p);
+                        }
+                        else
+                        {
+                            var rel = p.TrimStart('/');
+                            // 拼接前缀和相对路径（如果前缀为空则直接使用相对路径）
+                            var combined = string.IsNullOrEmpty(normalizedPrefix) ? rel : $"{normalizedPrefix}/{rel}";
+                            finalUri = new Uri(baseUri, combined);
+                        }
+
+                        var fileName = Path.GetFileName(finalUri.LocalPath);
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            skipped.Add(p);
+                            continue;
+                        }
+                        var addonsInstallPath = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons");
+                        var savePath = Path.Combine(addonsInstallPath, fileName);
+                        downloadItems.Add(Tuple.Create(finalUri, fileName, savePath));
+                    }
+                    catch
+                    {
+                        skipped.Add(p);
+                    }
+                }
+
+                if (downloadItems.Count == 0)
+                {
+                    lblDownloadStatus.Text = "未找到有效的下载条目";
+                    MessageBox.Show("未找到有效的下载条目，可检查download.list或配置格式", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 7. 定义addons安装路径（L4D2目录下的addons文件夹）
+                var addonsInstallFolder = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons");
+                if (!Directory.Exists(addonsInstallFolder))
+                {
+                    Directory.CreateDirectory(addonsInstallFolder); // 自动创建文件夹
+                }
+
+                // 8. 异步并发下载（使用 SemaphoreSlim + Task 管理，替换 Parallel.ForEach + async lambda 的错误用法）
+                lblDownloadStatus.Text = "开始下载附加组件...";
+                var totalFiles = downloadItems.Count;
+                var downloadedFiles = 0;
+                var progress = new Progress<int>(percent =>
+                {
+                    // 跨线程更新进度条（平均进度）
+                    try
+                    {
+                        double progressValue = (downloadedFiles * 100.0 + percent) / totalFiles;
+                        pbDownloadProgress.Value = (int)Math.Min(progressValue, 100); // 确保进度条的值不超过100
+                        labelDownloadPercent.Text = Math.Round(Math.Min(progressValue, 100.0),2).ToString()+"%";
+                    }
+                    catch (Exception ex) { Debug.WriteLine($"更新进度条时出错：{ex}"); }
+                });
+
+                var semaphore = new SemaphoreSlim(3); // 最大并发数
+                var tasks = new List<Task>();
+                foreach (var item in downloadItems)
+                {
+                    await semaphore.WaitAsync();
+                    var uri = item.Item1;
+                    var savePath = item.Item3;
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await HttpHelper.DownloadFileAsync(uri.ToString(), savePath, progress);
+
+                            Interlocked.Increment(ref downloadedFiles);
+                            Invoke(new Action(() =>
+                            {
+                                lblDownloadStatus.Text = $"已下载：{downloadedFiles}/{totalFiles} 个文件";
+                            }));
+                        }
+                        catch (Exception ex)
+                        {
+                            // 记录失败但不使整个操作立即崩溃；最终会抛出汇总异常
+                            Invoke(new Action(() =>
+                            {
+                                lblDownloadStatus.Text = $"下载失败：{uri} -> {ex.Message}";
+                            }));
+                            throw new Exception($"下载文件失败（{uri}）：{ex.Message}", ex);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }));
+                }
+
+                // 等待所有任务完成（若有失败，Task.WhenAll 会抛出聚合异常）
+                await Task.WhenAll(tasks);
+
+                // 9. 下载完成处理
+                lblDownloadStatus.Text = "所有附加组件下载并安装完成！";
+                pbDownloadProgress.Value = 100;
+                MessageBox.Show("附加组件下载安装完成！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // 10. 自动启动游戏（若勾选）
+                if (chkAutoStartGame.Checked && !string.IsNullOrEmpty(gameServerHost) && !string.IsNullOrEmpty(gameServerPort))
+                {
+                    await StartL4D2GameAsync(gameServerHost, gameServerPort);
+                }
+            }
+            catch (Exception ex)
+            {
+                lblDownloadStatus.Text = "下载/解析失败！";
+                MessageBox.Show($"操作失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // 恢复按钮状态
+                btnCodeName.Enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// 通过 Steam 协议启动《求生之路2》（Left 4 Dead 2）游戏客户端，以异步方式连接到指定的主机和端口。
+        /// </summary>
+        /// <remarks>此方法通过协议 URL 启动 Steam 客户端，从而启动《求生之路2》并连接到指定的游戏服务器。
+        /// 系统中必须已安装且正确配置 Steam 客户端，该操作才能成功执行。
+        /// 若 Steam 未运行，将通过消息框告知用户。</remarks>
+        /// <param name="host">要连接的游戏服务器的主机名或 IP 地址。不能为 null 或空值。</param>
+        /// <param name="port">游戏服务器的端口号（字符串形式）。若为空值，连接将使用默认端口。</param>
+        /// <returns>表示启动游戏客户端异步操作的任务（Task）。</returns>
+        private async Task StartL4D2GameAsync(string host, string port)
+        {
+            if (string.IsNullOrEmpty(textBox1GamePath.Text.Trim()))
+            {
+                MessageBox.Show("请先检索/选择L4D2安装路径。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (!Directory.Exists(textBox1GamePath.Text.Trim()))
+            {
+                MessageBox.Show("L4D2 安装路径不存在，请确认游戏已安装。", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (!ProcessHelper.IsProcessRunning("steam"))
+            {
+                DialogResult result = MessageBox.Show("检测到 Steam 未启动，是否尝试启动 Steam？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+                if (result == DialogResult.OK)
+                {
+                    try
+                    {
+                        var steamExe = Path.Combine(textBox2SteamPath.Text.Trim(), "steam.exe");
+                        ProcessHelper.StartExecutable(steamExe);
+                        // 等待 Steam 启动完成
+                        lblDownloadStatus.Text = "正在启动 Steam，请稍候...";
+                        MessageBox.Show("请在 Steam 客户端中登录并确保 Steam 已完全启动（进入到库界面），点击确定后继续启动游戏。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"启动 Steam 失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+                else return;
+            }
+            try
+            {
+                lblDownloadStatus.Text = "正在启动游戏...";
+                // Steam协议：steam://rungameid/550//+connect host:port
+                var connectArgs = string.IsNullOrEmpty(port) ? host : $"{host}:{port}";
+                var steamUrl = $"steam://rungameid/550//+connect {connectArgs}";
+                // 启动Steam协议（异步等待进程启动）
+                ProcessHelper.StartUri(steamUrl);
+                lblDownloadStatus.Text = "游戏已启动！";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"启动游戏失败：{ex.Message}\n请尝试手动启动Steam并运行L4D2。", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblDownloadStatus.Text = "游戏启动失败！";
+            }
+        }
+
+        /// <summary>
+        /// 手动启动游戏按钮的点击事件处理器：从服务器信息文本框中提取主机和端口，然后通过 Steam 协议启动《求生之路2》游戏客户端。
+        /// </summary>
+        /// <remarks>此方法首先验证服务器信息文本框中的内容是否有效。如果内容不存在，将显示一个信息框提示用户并终止当前操作。</remarks>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void btnStartGame_Click(object sender, EventArgs e)
+        {
+            //var host = textBoxServerInfo.Text.Replace("游戏服务器：", "").Split(':').FirstOrDefault();
+            //var port = textBoxServerInfo.Text.Replace("游戏服务器：", "").Split(':').LastOrDefault();
+            var host = textBoxServerInfo.Text.Split(':').FirstOrDefault().Trim();
+            var port = textBoxServerInfo.Text.Contains(":") ?
+                textBoxServerInfo.Text.Split(':').LastOrDefault().Trim() : ""; // L4D2 默认 27015 端口可省略
+            if (string.IsNullOrEmpty(host))
+            {
+                MessageBox.Show("请先解析下载代号获取服务器信息", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            await StartL4D2GameAsync(host, port);
+        }
+
+        /// <summary>
+        /// 处理点击“获取服务器信息”按钮的事件。如果成功获取到对应代号的服务器信息，则显示在服务器信息文本框中。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void btnCheckForServerInfo_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var code = textBox3CodeName.Text.Trim();
+                if (string.IsNullOrEmpty(code))
+                {
+                    MessageBox.Show("请输入下载代号（如1、231）", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                var downloadListContent = await HttpHelper.GetRemoteTextAsync(DownloadListUrl);
+                if (string.IsNullOrEmpty(downloadListContent))
+                {
+                    lblDownloadStatus.Text = "下载配置为空";
+                    return;
+                }
+                var addonConfig = SteamLibraryVdfParser.GetAddonConfigByCode(downloadListContent, code);
+                if (addonConfig == null)
+                {
+                    lblDownloadStatus.Text = "未找到该代号的配置";
+                    MessageBox.Show($"未找到代号「{code}」的下载配置", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                var gameServerHost = addonConfig.TryGetValue("gameServerHost", out var hostObj) ? hostObj.ToString() : "";
+                var gameServerPort = addonConfig.TryGetValue("gameServerPort", out var portObj) ? portObj.ToString() : "";
+                if (gameServerPort == "27015")
+                {
+                    textBoxServerInfo.Text = $"{gameServerHost}";
+                    textBoxConsoleCmd.Text = $"connect {gameServerHost}";
+                }
+                else
+                {
+                    textBoxServerInfo.Text = $"{gameServerHost}:{gameServerPort}";
+                    textBoxConsoleCmd.Text = $"connect {gameServerHost}:{gameServerPort}";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"获取服务器信息失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnStartSteam_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var steamExe = Path.Combine(textBox2SteamPath.Text.Trim(), "steam.exe");
+                ProcessHelper.StartExecutable(steamExe);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"启动 Steam 失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// 关于按钮的点击事件处理器：显示应用程序的关于对话框。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnAbout_Click(object sender, EventArgs e)
+        {
+            using (AboutForm aboutForm = new AboutForm())
+            {
+                aboutForm.ShowDialog();
+            }
+        }
+
+        /// <summary>
+        /// 一键完成所有操作按钮的点击事件处理器：检索游戏路径、下载插件、启动游戏。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnOneClickFinishAll_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(textBox3CodeName.Text))
+                {
+                    MessageBox.Show("请先在下载区域输入下载代号（如1、231）", "提示", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                btnDetectAllPath_Click(sender, e);
+                btnCodeName_Click(sender, e);
+            }
+            catch (Exception ex) {
+                MessageBox.Show($"一键完成操作失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// 解压缩工具按钮的点击事件处理器：显示7-Zip管理对话框。
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btn7ZipForm_Click(object sender, EventArgs e)
+        {
+            using (SevenZipForm sevenZipForm = new SevenZipForm(this))
+            {
+                sevenZipForm.ShowDialog();
+            }
+        }
+    }
+}
