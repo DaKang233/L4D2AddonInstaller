@@ -25,6 +25,11 @@ namespace L4D2AddonInstaller_WinForms
             string appTitle = "《求生之路 2》附加组件安装器 v" + appVersion;
             this.Text = appTitle;
         }
+        // 全局变量
+        public static SevenZipHelper.OverwriteMode overwriteMode = SevenZipHelper.OverwriteMode.OverwriteAll;
+        public static string ArchivePath = "";
+        public static string OutputDirPath = "";
+        public static string SevenZipPath = "";
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {

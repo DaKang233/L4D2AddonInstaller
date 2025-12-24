@@ -36,7 +36,7 @@
             this.labelStatusText = new System.Windows.Forms.Label();
             this.labelStatus = new System.Windows.Forms.Label();
             this.labelPercent = new System.Windows.Forms.Label();
-            this.buttonStop = new System.Windows.Forms.Button();
+            this.buttonCancel = new System.Windows.Forms.Button();
             this.label7ZipPath = new System.Windows.Forms.Label();
             this.textBox7ZipPath = new System.Windows.Forms.TextBox();
             this.button7ZipPathBrowse = new System.Windows.Forms.Button();
@@ -47,6 +47,16 @@
             this.buttonOutputDirDetect = new System.Windows.Forms.Button();
             this.buttonOpenOutputDir = new System.Windows.Forms.Button();
             this.buttonPause = new System.Windows.Forms.Button();
+            this.groupBoxExtraOptions = new System.Windows.Forms.GroupBox();
+            this.labelIncludeFiles = new System.Windows.Forms.Label();
+            this.textBoxIncludeFiles = new System.Windows.Forms.TextBox();
+            this.labelPassword = new System.Windows.Forms.Label();
+            this.textBoxPassword = new System.Windows.Forms.TextBox();
+            this.radioBtnRenameExisting = new System.Windows.Forms.RadioButton();
+            this.radioBtnRenameNewer = new System.Windows.Forms.RadioButton();
+            this.radioBtnSkipExisting = new System.Windows.Forms.RadioButton();
+            this.radioBtnOverwriteAll = new System.Windows.Forms.RadioButton();
+            this.groupBoxExtraOptions.SuspendLayout();
             this.SuspendLayout();
             // 
             // progressBarCompression
@@ -96,6 +106,7 @@
             this.buttonStart.TabIndex = 4;
             this.buttonStart.Text = "开始解压";
             this.buttonStart.UseVisualStyleBackColor = true;
+            this.buttonStart.Click += new System.EventHandler(this.buttonStart_Click);
             // 
             // labelStatusText
             // 
@@ -127,14 +138,16 @@
             // 
             // buttonStop
             // 
-            this.buttonStop.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.buttonStop.Location = new System.Drawing.Point(199, 13);
-            this.buttonStop.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.buttonStop.Name = "buttonStop";
-            this.buttonStop.Size = new System.Drawing.Size(88, 30);
-            this.buttonStop.TabIndex = 9;
-            this.buttonStop.Text = "终止";
-            this.buttonStop.UseVisualStyleBackColor = true;
+            this.buttonCancel.Enabled = false;
+            this.buttonCancel.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.buttonCancel.Location = new System.Drawing.Point(199, 13);
+            this.buttonCancel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.buttonCancel.Name = "buttonStop";
+            this.buttonCancel.Size = new System.Drawing.Size(88, 30);
+            this.buttonCancel.TabIndex = 9;
+            this.buttonCancel.Text = "终止";
+            this.buttonCancel.UseVisualStyleBackColor = true;
+            this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
             // 
             // label7ZipPath
             // 
@@ -193,6 +206,7 @@
             this.buttonOutputDirBrowse.TabIndex = 13;
             this.buttonOutputDirBrowse.Text = "浏览...";
             this.buttonOutputDirBrowse.UseVisualStyleBackColor = true;
+            this.buttonOutputDirBrowse.Click += new System.EventHandler(this.buttonOutputDirBrowse_Click);
             // 
             // button7ZipPathDetect
             // 
@@ -242,11 +256,105 @@
             this.buttonPause.UseVisualStyleBackColor = true;
             this.buttonPause.Visible = false;
             // 
+            // groupBoxExtraOptions
+            // 
+            this.groupBoxExtraOptions.Controls.Add(this.labelIncludeFiles);
+            this.groupBoxExtraOptions.Controls.Add(this.textBoxIncludeFiles);
+            this.groupBoxExtraOptions.Controls.Add(this.labelPassword);
+            this.groupBoxExtraOptions.Controls.Add(this.textBoxPassword);
+            this.groupBoxExtraOptions.Controls.Add(this.radioBtnRenameExisting);
+            this.groupBoxExtraOptions.Controls.Add(this.radioBtnRenameNewer);
+            this.groupBoxExtraOptions.Controls.Add(this.radioBtnSkipExisting);
+            this.groupBoxExtraOptions.Controls.Add(this.radioBtnOverwriteAll);
+            this.groupBoxExtraOptions.Location = new System.Drawing.Point(11, 274);
+            this.groupBoxExtraOptions.Name = "groupBoxExtraOptions";
+            this.groupBoxExtraOptions.Size = new System.Drawing.Size(579, 76);
+            this.groupBoxExtraOptions.TabIndex = 20;
+            this.groupBoxExtraOptions.TabStop = false;
+            this.groupBoxExtraOptions.Text = "高级选项";
+            // 
+            // labelIncludeFiles
+            // 
+            this.labelIncludeFiles.AutoSize = true;
+            this.labelIncludeFiles.Location = new System.Drawing.Point(426, 22);
+            this.labelIncludeFiles.Name = "labelIncludeFiles";
+            this.labelIncludeFiles.Size = new System.Drawing.Size(117, 20);
+            this.labelIncludeFiles.TabIndex = 23;
+            this.labelIncludeFiles.Text = "过滤文件(可选)：";
+            // 
+            // textBoxIncludeFiles
+            // 
+            this.textBoxIncludeFiles.Location = new System.Drawing.Point(430, 44);
+            this.textBoxIncludeFiles.Name = "textBoxIncludeFiles";
+            this.textBoxIncludeFiles.Size = new System.Drawing.Size(143, 26);
+            this.textBoxIncludeFiles.TabIndex = 22;
+            // 
+            // labelPassword
+            // 
+            this.labelPassword.AutoSize = true;
+            this.labelPassword.Location = new System.Drawing.Point(287, 22);
+            this.labelPassword.Name = "labelPassword";
+            this.labelPassword.Size = new System.Drawing.Size(103, 20);
+            this.labelPassword.TabIndex = 21;
+            this.labelPassword.Text = "密码(如果有)：";
+            // 
+            // textBoxPassword
+            // 
+            this.textBoxPassword.Location = new System.Drawing.Point(291, 44);
+            this.textBoxPassword.Name = "textBoxPassword";
+            this.textBoxPassword.Size = new System.Drawing.Size(133, 26);
+            this.textBoxPassword.TabIndex = 4;
+            // 
+            // radioBtnRenameExisting
+            // 
+            this.radioBtnRenameExisting.AutoSize = true;
+            this.radioBtnRenameExisting.Location = new System.Drawing.Point(128, 46);
+            this.radioBtnRenameExisting.Name = "radioBtnRenameExisting";
+            this.radioBtnRenameExisting.Size = new System.Drawing.Size(139, 24);
+            this.radioBtnRenameExisting.TabIndex = 3;
+            this.radioBtnRenameExisting.TabStop = true;
+            this.radioBtnRenameExisting.Text = "重命名已存在文件";
+            this.radioBtnRenameExisting.UseVisualStyleBackColor = true;
+            // 
+            // radioBtnRenameNewer
+            // 
+            this.radioBtnRenameNewer.AutoSize = true;
+            this.radioBtnRenameNewer.Location = new System.Drawing.Point(6, 46);
+            this.radioBtnRenameNewer.Name = "radioBtnRenameNewer";
+            this.radioBtnRenameNewer.Size = new System.Drawing.Size(111, 24);
+            this.radioBtnRenameNewer.TabIndex = 2;
+            this.radioBtnRenameNewer.TabStop = true;
+            this.radioBtnRenameNewer.Text = "重命名新文件";
+            this.radioBtnRenameNewer.UseVisualStyleBackColor = true;
+            // 
+            // radioBtnSkipExisting
+            // 
+            this.radioBtnSkipExisting.AutoSize = true;
+            this.radioBtnSkipExisting.Location = new System.Drawing.Point(128, 25);
+            this.radioBtnSkipExisting.Name = "radioBtnSkipExisting";
+            this.radioBtnSkipExisting.Size = new System.Drawing.Size(125, 24);
+            this.radioBtnSkipExisting.TabIndex = 1;
+            this.radioBtnSkipExisting.TabStop = true;
+            this.radioBtnSkipExisting.Text = "跳过已存在文件";
+            this.radioBtnSkipExisting.UseVisualStyleBackColor = true;
+            // 
+            // radioBtnOverwriteAll
+            // 
+            this.radioBtnOverwriteAll.AutoSize = true;
+            this.radioBtnOverwriteAll.Location = new System.Drawing.Point(6, 25);
+            this.radioBtnOverwriteAll.Name = "radioBtnOverwriteAll";
+            this.radioBtnOverwriteAll.Size = new System.Drawing.Size(83, 24);
+            this.radioBtnOverwriteAll.TabIndex = 0;
+            this.radioBtnOverwriteAll.TabStop = true;
+            this.radioBtnOverwriteAll.Text = "覆盖全部";
+            this.radioBtnOverwriteAll.UseVisualStyleBackColor = true;
+            // 
             // SevenZipForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(602, 279);
+            this.ClientSize = new System.Drawing.Size(602, 362);
+            this.Controls.Add(this.groupBoxExtraOptions);
             this.Controls.Add(this.buttonOpenOutputDir);
             this.Controls.Add(this.buttonOutputDirDetect);
             this.Controls.Add(this.button7ZipPathDetect);
@@ -256,7 +364,7 @@
             this.Controls.Add(this.label7ZipPath);
             this.Controls.Add(this.textBox7ZipPath);
             this.Controls.Add(this.button7ZipPathBrowse);
-            this.Controls.Add(this.buttonStop);
+            this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.labelPercent);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.labelStatusText);
@@ -273,6 +381,8 @@
             this.Name = "SevenZipForm";
             this.ShowIcon = false;
             this.Text = "解压缩";
+            this.groupBoxExtraOptions.ResumeLayout(false);
+            this.groupBoxExtraOptions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -288,7 +398,7 @@
         private System.Windows.Forms.Label labelStatus;
         private System.Windows.Forms.Label labelPercent;
         public System.Windows.Forms.TextBox textBoxArchivePath;
-        private System.Windows.Forms.Button buttonStop;
+        private System.Windows.Forms.Button buttonCancel;
         private System.Windows.Forms.Label label7ZipPath;
         public System.Windows.Forms.TextBox textBox7ZipPath;
         private System.Windows.Forms.Button button7ZipPathBrowse;
@@ -299,5 +409,14 @@
         private System.Windows.Forms.Button buttonOutputDirDetect;
         private System.Windows.Forms.Button buttonOpenOutputDir;
         private System.Windows.Forms.Button buttonPause;
+        private System.Windows.Forms.GroupBox groupBoxExtraOptions;
+        private System.Windows.Forms.RadioButton radioBtnOverwriteAll;
+        private System.Windows.Forms.RadioButton radioBtnRenameExisting;
+        private System.Windows.Forms.RadioButton radioBtnRenameNewer;
+        private System.Windows.Forms.RadioButton radioBtnSkipExisting;
+        private System.Windows.Forms.Label labelPassword;
+        private System.Windows.Forms.TextBox textBoxPassword;
+        private System.Windows.Forms.Label labelIncludeFiles;
+        private System.Windows.Forms.TextBox textBoxIncludeFiles;
     }
 }

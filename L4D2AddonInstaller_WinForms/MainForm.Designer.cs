@@ -55,10 +55,10 @@
             this.lblDownloadStatusTxt = new System.Windows.Forms.Label();
             this.groupBoxPathDetection = new System.Windows.Forms.GroupBox();
             this.groupBoxDownload = new System.Windows.Forms.GroupBox();
+            this.labelDownloadPercent = new System.Windows.Forms.Label();
             this.btnAbout = new System.Windows.Forms.Button();
             this.btnOneClickFinishAll = new System.Windows.Forms.Button();
             this.btn7ZipForm = new System.Windows.Forms.Button();
-            this.labelDownloadPercent = new System.Windows.Forms.Label();
             this.groupBoxServerInfo.SuspendLayout();
             this.groupBoxPathDetection.SuspendLayout();
             this.groupBoxDownload.SuspendLayout();
@@ -339,6 +339,17 @@
             this.groupBoxDownload.TabStop = false;
             this.groupBoxDownload.Text = "下载";
             // 
+            // labelDownloadPercent
+            // 
+            this.labelDownloadPercent.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.labelDownloadPercent.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.labelDownloadPercent.Location = new System.Drawing.Point(593, 79);
+            this.labelDownloadPercent.Name = "labelDownloadPercent";
+            this.labelDownloadPercent.Size = new System.Drawing.Size(112, 20);
+            this.labelDownloadPercent.TabIndex = 20;
+            this.labelDownloadPercent.Text = "0%";
+            this.labelDownloadPercent.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
             // btnAbout
             // 
             this.btnAbout.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
@@ -371,17 +382,6 @@
             this.btn7ZipForm.Text = "解压缩功能";
             this.btn7ZipForm.UseVisualStyleBackColor = true;
             this.btn7ZipForm.Click += new System.EventHandler(this.btn7ZipForm_Click);
-            // 
-            // labelDownloadPercent
-            // 
-            this.labelDownloadPercent.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.labelDownloadPercent.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.labelDownloadPercent.Location = new System.Drawing.Point(593, 79);
-            this.labelDownloadPercent.Name = "labelDownloadPercent";
-            this.labelDownloadPercent.Size = new System.Drawing.Size(112, 20);
-            this.labelDownloadPercent.TabIndex = 20;
-            this.labelDownloadPercent.Text = "0%";
-            this.labelDownloadPercent.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // MainForm
             // 
