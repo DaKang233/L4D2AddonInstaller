@@ -96,13 +96,6 @@ namespace InstallerForL4D2AddonInstaller
                     btnNext.Text = "下一步";
                 }
 
-                if (index == _steps.Count)
-                {
-                    btnNext.Enabled = true;
-                    btnPrev.Enabled = false;
-                    btnNext.Text = "完成";
-                }
-
                 installPathStep.BtnNextEvent += (s, args) =>
                 {
                     if (args.EnableNext)
@@ -121,6 +114,13 @@ namespace InstallerForL4D2AddonInstaller
                 };
                 if (step.Name == "InstallLicense")
                     btnNext.Enabled = AgreementChecked;
+
+                if (step.Name == "FinishedStep")
+                {
+                    btnPrev.Enabled = false;
+                    btnCancel.Enabled = false;
+                    btnNext.Text = "完成";
+                }
             }
         }
 
