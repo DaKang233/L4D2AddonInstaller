@@ -16,6 +16,10 @@ namespace InstallerForL4D2AddonInstaller
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            if (Environment.OSVersion.Version < new Version(10, 0, 17763))
+            {
+                MessageBox.Show("需要 Windows 10 1809 或更高版本","错误",MessageBoxButtons.OK,MessageBoxIcon.Exclamation);
+            }
             Application.Run(new InstallerForm());
         }
     }
