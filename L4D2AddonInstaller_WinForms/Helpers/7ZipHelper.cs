@@ -66,40 +66,28 @@ namespace L4D2AddonInstaller.Helper
         /// exist.</remarks>
         /// <returns>A string containing the full path to 7z.exe if found in a known directory; otherwise, null.</returns>
         public static string Default7ZipFullPath() {
-            var sevenZipPath = Path.Combine(
-                AppContext.BaseDirectory,
-                "tools",
-                "7z.exe"
-            );
-            var sevenZipCurrentDirPath = Path.Combine(
-                Environment.CurrentDirectory,
-                "7z.exe"
-            );
-            var sevenZipProgramFilesPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "7-Zip",
-                "7z.exe"
-            );
-            var sevenZipVSProjectPath = Path.Combine(
-                Directory.GetParent(Directory.GetParent(Environment.CurrentDirectory).FullName).FullName,
-                "tools",
-                "7z.exe");
-            Debug.WriteLine($"检测 7z.exe 路径：\n{sevenZipPath}\n{sevenZipCurrentDirPath}\n{sevenZipProgramFilesPath}\n{sevenZipVSProjectPath}");
-            if (File.Exists(sevenZipPath)) {
-                return sevenZipPath;
+            var candidatePaths = new List<string>
+            {
+                Path.Combine(AppContext.BaseDirectory, "tools", "7z.exe"),
+                Path.Combine(AppContext.BaseDirectory, "7z.exe"),
+                Path.Combine(Environment.CurrentDirectory, "7z.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe")
+            };
+
+            var currentDirectoryInfo = new DirectoryInfo(Environment.CurrentDirectory);
+            for (var i = 0; i < 2 && currentDirectoryInfo?.Parent != null; i++)
+            {
+                currentDirectoryInfo = currentDirectoryInfo.Parent;
             }
-            else if (File.Exists(sevenZipCurrentDirPath)) {
-                return sevenZipCurrentDirPath;
+
+            if (currentDirectoryInfo != null)
+            {
+                candidatePaths.Add(Path.Combine(currentDirectoryInfo.FullName, "tools", "7z.exe"));
             }
-            else if (File.Exists(sevenZipProgramFilesPath)) {
-                return sevenZipProgramFilesPath;
-            }
-            else if (File.Exists(sevenZipVSProjectPath)) {
-                return sevenZipVSProjectPath;
-            }
-            else {
-                return null;
-            }
+
+            Debug.WriteLine($"检测 7z.exe 路径：\n{string.Join("\n", candidatePaths)}");
+
+            return candidatePaths.FirstOrDefault(path => File.Exists(path));
         }
 
         /// <summary>
