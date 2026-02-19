@@ -167,6 +167,7 @@
     <None Include="Assets\shell32_00123.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="authorImage.jpg" />
     <Content Include="tools\7z.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
