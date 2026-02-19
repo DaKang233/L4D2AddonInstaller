@@ -507,10 +507,15 @@ namespace InstallerForL4D2AddonInstaller.Helper
                         var fileProgress = new Progress<long>(bytesDownloaded =>
                         {
                             var deltaBytes = bytesDownloaded - lastBytes;       // 本次增量（现在的已下载字节数 - 上次的已下载字节数）
+                            if (deltaBytes <= 0)
+                                return;
+
                             lastBytes = bytesDownloaded;    // 更新已下载字节数
 
                             double speed = deltaBytes / Math.Max(sw.Elapsed.TotalSeconds, 0.001);   // 计算速度（字节/秒）
                             sw.Restart();   // 重置计时器
+
+                            var currentTotalBytesDownloaded = Interlocked.Add(ref totalBytesDownloaded, deltaBytes);
 
                             progressReporter?.Report(
                                 new DownloadByteProgressInfo(
@@ -519,7 +524,7 @@ namespace InstallerForL4D2AddonInstaller.Helper
                                     fileName,
                                     bytesDownloaded,
                                     fileTotalBytes,
-                                    Interlocked.Read(ref totalBytesDownloaded) + deltaBytes,
+                                    currentTotalBytesDownloaded,
                                     totalBytes,
                                     speed,
                                     false));
@@ -531,7 +536,11 @@ namespace InstallerForL4D2AddonInstaller.Helper
                             cancellationToken,
                             fileProgress);
 
-                        Interlocked.Add(ref totalBytesDownloaded, fileTotalBytes);  // 确保总下载字节数正确（增加本次文件的总字节数）
+                        if (fileTotalBytes > 0 && lastBytes < fileTotalBytes)
+                        {
+                            Interlocked.Add(ref totalBytesDownloaded, fileTotalBytes - lastBytes);
+                        }
+
                         int finished = Interlocked.Increment(ref completedFiles);   // 增加已完成文件数
 
                         progressReporter?.Report(
@@ -541,7 +550,7 @@ namespace InstallerForL4D2AddonInstaller.Helper
                                 fileName,
                                 fileTotalBytes,
                                 fileTotalBytes,
-                                totalBytesDownloaded,
+                                Interlocked.Read(ref totalBytesDownloaded),
                                 totalBytes,
                                 0,
                                 finished == totalFiles));
@@ -567,6 +576,12 @@ namespace InstallerForL4D2AddonInstaller.Helper
             {
                 using (var request = new HttpRequestMessage(HttpMethod.Head, url))
                 using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    if (response.IsSuccessStatusCode && response.Content.Headers.ContentLength.HasValue)
+                        return response.Content.Headers.ContentLength.Value;
+                }
+
+                using (var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                 {
                     response.EnsureSuccessStatusCode();
                     return response.Content.Headers.ContentLength ?? 0;

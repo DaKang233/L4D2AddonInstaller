@@ -92,6 +92,11 @@ namespace InstallerForL4D2AddonInstaller
             var downloadList = HttpHelper.GetDownloadList(protocol, webServer, webPort, prefix, new List<string> { downloadArchivePath }, installPath);
             progressBar.Value = 0;
             AppendLog("开始下载程序...");
+
+            int lastLoggedPercent = -1;
+            DateTime lastLogTime = DateTime.MinValue;
+            TimeSpan logInterval = TimeSpan.FromMilliseconds(800);
+
             try
             {
                 await HttpHelper.DownloadListItemsWithByteProgressAsync(downloadList.Items, cancellationToken, progressReporter: new Progress<HttpHelper.DownloadByteProgressInfo>(progressInfo =>
@@ -104,12 +109,27 @@ namespace InstallerForL4D2AddonInstaller
                     }
                     else
                     {
-                        var (speedValue, speedUnit) = HttpHelper.BytesToUnit((long)progressInfo.CurrentFileSpeedBytesPerSec);
+                        long totalBytesSafe = progressInfo.TotalBytes > 0 ? progressInfo.TotalBytes : progressInfo.CurrentFileTotalBytes;
+                        long downloadedBytesSafe = progressInfo.TotalBytes > 0 ? progressInfo.TotalBytesDownloaded : progressInfo.CurrentFileBytesDownloaded;
+
+                        int totalPercent = 0;
+                        if (totalBytesSafe > 0)
+                        {
+                            totalPercent = (int)((double)downloadedBytesSafe / totalBytesSafe * 100);
+                        }
+
+                        var (speedValue, speedUnit) = HttpHelper.BytesToUnit((long)Math.Max(progressInfo.CurrentFileSpeedBytesPerSec, 0));
                         labelStatus.Text = $"正在下载 {progressInfo.CurrentFileName} ({HttpHelper.GetBytesUnitString(progressInfo.CurrentFileBytesDownloaded)}/{HttpHelper.GetBytesUnitString(progressInfo.CurrentFileTotalBytes)})";
-                        var totalPercent = (int)((double)progressInfo.TotalBytesDownloaded / progressInfo.TotalBytes * 100);
-                        AppendLog($"正在下载文件：{progressInfo.CurrentFileName} ({totalPercent}%)");
                         progressBar.Value = Math.Max(Math.Min(totalPercent,100),0);
-                        labelSpeed.Text = $"{speedValue} {speedUnit}/s";
+                        labelSpeed.Text = $"{speedValue:F2} {speedUnit}/s";
+
+                        var now = DateTime.Now;
+                        if (totalPercent != lastLoggedPercent && (now - lastLogTime >= logInterval || totalPercent == 100))
+                        {
+                            AppendLog($"正在下载文件：{progressInfo.CurrentFileName} ({totalPercent}%)");
+                            lastLoggedPercent = totalPercent;
+                            lastLogTime = now;
+                        }
                     }
                 }));
             }
