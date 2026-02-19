@@ -85,8 +85,6 @@ namespace InstallerForL4D2AddonInstaller
 
         bool VersionsLoaded = false;
         bool AgreementChecked = false;
-        int InstallProgressStepReverseIndex = 2;
-        int InstallPathStepReverseIndex = 3;
         private void ShowStep(int index)
         {
             // 清除当前容器内容
@@ -97,13 +95,15 @@ namespace InstallerForL4D2AddonInstaller
                 var step = _steps[index];
                 step.Dock = DockStyle.Fill;
                 pnlStepContainer.Controls.Add(step);
+                bool isProgressStep = step is InstallProgressStep;
+                bool isPathStep = step is InstallPathStep;
 
                 // 更新按钮状态
-                btnPrev.Enabled = index > 0 && index != _steps.Count - InstallProgressStepReverseIndex;
-                btnNext.Enabled = (VersionsLoaded || index < _steps.Count - InstallPathStepReverseIndex) && index != _steps.Count - InstallProgressStepReverseIndex;
+                btnPrev.Enabled = index > 0 && !isProgressStep;
+                btnNext.Enabled = !isProgressStep && (isPathStep ? VersionsLoaded : true);
 
                 // 如果是最后一步，按钮文字改为“安装”
-                if (index == _steps.Count - InstallPathStepReverseIndex)
+                if (isPathStep)
                 {
                     btnNext.Text = "安装";
                 }
@@ -134,7 +134,7 @@ namespace InstallerForL4D2AddonInstaller
 
         private void btnNext_Click(object sender, EventArgs e)
         {
-            if (_currentStepIndex == _steps.Count - InstallPathStepReverseIndex)
+            if (_steps[_currentStepIndex] is InstallPathStep)
             {
 
                 // 最后一步，开始安装

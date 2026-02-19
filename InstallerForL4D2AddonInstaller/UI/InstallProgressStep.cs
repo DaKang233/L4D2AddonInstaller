@@ -41,6 +41,11 @@ namespace InstallerForL4D2AddonInstaller
             await InstallAsync(versionDetails);
         }
 
+        private void AppendLog(string message)
+        {
+            richTextBoxLog.AppendText($"{System.DateTime.Now:yyyy-MM-dd HH:mm:ss} {message}\n");
+        }
+
         private async Task InstallAsync(VersionDetails versionDetails)
         {
             var downloadArchivePath = versionDetails.RelativePath;
@@ -54,6 +59,7 @@ namespace InstallerForL4D2AddonInstaller
             var cancellationToken = installerForm.cts.Token;
 
             progressBar.Value = 0;
+            AppendLog("开始下载 7-Zip 组件...");
             try
             {
                 await Helper.SevenZipHelper.Download7ZipExeToDirectory(cancellationToken, installPath, progress: new Progress<int>(value =>
@@ -61,6 +67,7 @@ namespace InstallerForL4D2AddonInstaller
                     if (value == 100)
                     {
                         labelStatus.Text = "7-Zip 下载完成。";
+                        AppendLog($"{labelStatus.Text}");
                     }
                     if (value <= 23)
                     {
@@ -75,6 +82,7 @@ namespace InstallerForL4D2AddonInstaller
             }
             catch (Exception ex)
             {
+                AppendLog(ex.ToString());
                 MessageBox.Show($"下载 7-Zip 组件时出错：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 installerForm.IsClosedWithoutAsking = true;
                 installerForm.Close();
@@ -83,6 +91,7 @@ namespace InstallerForL4D2AddonInstaller
 
             var downloadList = HttpHelper.GetDownloadList(protocol, webServer, webPort, prefix, new List<string> { downloadArchivePath }, installPath);
             progressBar.Value = 0;
+            AppendLog("开始下载程序...");
             try
             {
                 await HttpHelper.DownloadListItemsWithByteProgressAsync(downloadList.Items, cancellationToken, progressReporter: new Progress<HttpHelper.DownloadByteProgressInfo>(progressInfo =>
@@ -90,6 +99,7 @@ namespace InstallerForL4D2AddonInstaller
                     if (progressInfo.IsCompleted)
                     {
                         labelStatus.Text = "文件下载完成。";
+                        AppendLog($"{labelStatus.Text}");
                         progressBar.Value = 100;
                     }
                     else
@@ -97,6 +107,7 @@ namespace InstallerForL4D2AddonInstaller
                         var (speedValue, speedUnit) = HttpHelper.BytesToUnit((long)progressInfo.CurrentFileSpeedBytesPerSec);
                         labelStatus.Text = $"正在下载 {progressInfo.CurrentFileName} ({HttpHelper.GetBytesUnitString(progressInfo.CurrentFileBytesDownloaded)}/{HttpHelper.GetBytesUnitString(progressInfo.CurrentFileTotalBytes)})";
                         var totalPercent = (int)((double)progressInfo.TotalBytesDownloaded / progressInfo.TotalBytes * 100);
+                        AppendLog($"正在下载文件：{progressInfo.CurrentFileName} ({totalPercent}%)");
                         progressBar.Value = Math.Max(Math.Min(totalPercent,100),0);
                         labelSpeed.Text = $"{speedValue} {speedUnit}/s";
                     }
@@ -104,6 +115,7 @@ namespace InstallerForL4D2AddonInstaller
             }
             catch (Exception ex)
             {
+                AppendLog(ex.ToString());
                 MessageBox.Show($"下载文件时出错：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 if (System.IO.File.Exists(System.IO.Path.Combine(installPath, downloadArchivePath)))
                 {
@@ -122,6 +134,7 @@ namespace InstallerForL4D2AddonInstaller
                 var progress = new Progress<int>(value =>
                 {
                     labelStatus.Text = $"正在解压文件... ({value}%)";
+                    AppendLog($"正在解压文件：{archiveFileName} ({value}%)");
                     progressBar.Value = Math.Max(Math.Min(value,100),0);
                 });
                 await Helper.SevenZipHelper.ExtractAsync(
@@ -135,6 +148,7 @@ namespace InstallerForL4D2AddonInstaller
             }
             catch (Exception ex)
             {
+                AppendLog(ex.ToString());
                 MessageBox.Show($"解压文件时出错：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 string fullPath = Path.GetFullPath(installPath);
 
@@ -151,6 +165,7 @@ namespace InstallerForL4D2AddonInstaller
                 return;
             }
             progressBar.Value = 100;
+            AppendLog("解压完成。");
             labelStatus.Text = "安装完成。";
             InstallationCompleted?.Invoke(this, true);
         }
