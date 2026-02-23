@@ -484,7 +484,6 @@ namespace InstallerForL4D2AddonInstaller.Helper
                 totalBytes += await GetContentLengthAsync(item.FileUri.ToString());
 
             long totalBytesDownloaded = 0;
-
             var semaphore = new SemaphoreSlim(3);
             var tasks = new List<Task>();
 
@@ -500,49 +499,67 @@ namespace InstallerForL4D2AddonInstaller.Helper
 
                     long fileTotalBytes = await GetContentLengthAsync(url);
                     long lastBytes = 0;
+                    long lastSampleBytes = 0;
+                    const long sampleIntervalMs = 500;
+                    var speedSamples = new Queue<decimal>(4);
                     var sw = Stopwatch.StartNew();
 
                     try
                     {
                         var fileProgress = new Progress<long>(bytesDownloaded =>
                         {
-                            var deltaBytes = bytesDownloaded - lastBytes;       // 本次增量（现在的已下载字节数 - 上次的已下载字节数）
+                            var deltaBytes = bytesDownloaded - lastBytes;
                             if (deltaBytes <= 0)
                                 return;
 
-                            lastBytes = bytesDownloaded;    // 更新已下载字节数
-
-                            double speed = deltaBytes / Math.Max(sw.Elapsed.TotalSeconds, 0.001);   // 计算速度（字节/秒）
-                            sw.Restart();   // 重置计时器
-
+                            lastBytes = bytesDownloaded;
                             var currentTotalBytesDownloaded = Interlocked.Add(ref totalBytesDownloaded, deltaBytes);
+
+                            decimal speed = 0m;
+                            var elapsedMs = sw.ElapsedMilliseconds;
+                            if (elapsedMs >= sampleIntervalMs)
+                            {
+                                var sampleDelta = bytesDownloaded - lastSampleBytes;
+                                if (sampleDelta > 0)
+                                {
+                                    speed = sampleDelta * 1000m / elapsedMs;
+                                    if (speedSamples.Count == 4)
+                                        speedSamples.Dequeue();
+                                    speedSamples.Enqueue(speed);
+                                }
+
+                                lastSampleBytes = bytesDownloaded;
+                                sw.Restart();
+                            }
+
+                            if (speed == 0m && speedSamples.Count > 0)
+                            {
+                                decimal sum = 0m;
+                                foreach (var sample in speedSamples) sum += sample;
+                                speed = sum / speedSamples.Count;
+                            }
 
                             progressReporter?.Report(
                                 new DownloadByteProgressInfo(
                                     totalFiles,
-                                    completedFiles,
+                                    Volatile.Read(ref completedFiles),
                                     fileName,
                                     bytesDownloaded,
                                     fileTotalBytes,
                                     currentTotalBytesDownloaded,
                                     totalBytes,
-                                    speed,
+                                    (double)speed,
                                     false));
                         });
 
-                        await DownloadFileAsyncWithByteProgress(
-                            url,
-                            savePath,
-                            cancellationToken,
-                            fileProgress);
+                        await DownloadFileAsyncWithByteProgress(url, savePath, cancellationToken, fileProgress);
 
                         if (fileTotalBytes > 0 && lastBytes < fileTotalBytes)
                         {
                             Interlocked.Add(ref totalBytesDownloaded, fileTotalBytes - lastBytes);
                         }
 
-                        int finished = Interlocked.Increment(ref completedFiles);   // 增加已完成文件数
-
+                        int finished = Interlocked.Increment(ref completedFiles);
                         progressReporter?.Report(
                             new DownloadByteProgressInfo(
                                 totalFiles,
