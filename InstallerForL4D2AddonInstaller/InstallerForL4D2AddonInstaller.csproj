@@ -58,6 +58,9 @@
     <Compile Include="Helpers\HttpHelper.cs" />
     <Compile Include="Helpers\ProcessHelper.cs" />
     <Compile Include="Helpers\ShortcutHelper.cs" />
+    <Compile Include="Services\IInstallService.cs" />
+    <Compile Include="Services\InstallProgressInfo.cs" />
+    <Compile Include="Services\InstallService.cs" />
     <Compile Include="UI\FinishedStep.cs">
       <SubType>UserControl</SubType>
     </Compile>

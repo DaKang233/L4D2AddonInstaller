@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using L4D2AddonInstaller.Parser;
 using L4D2AddonInstaller.Helper;
+using L4D2AddonInstaller.Services;
 
 namespace L4D2AddonInstaller
 {
@@ -33,6 +34,7 @@ namespace L4D2AddonInstaller
         public static bool IsOneClickAction = false;
         public event EventHandler<bool> InstallationFinished;
         public CancellationTokenSource _cts;
+        private readonly IInstallService _installService = new InstallService();
 
         // 解压相关全局变量（关闭窗口时保留值）
         public static string ArchivePath = "";
@@ -311,8 +313,6 @@ namespace L4D2AddonInstaller
         /// <summary>
         /// 下载列表的远程URL地址
         /// </summary>
-        private const string DownloadListUrl = "https://furina.dakang233.com:8443/www/l4d2/download.txt";
-
         /// <summary>
         /// 处理代号下载按钮的点击事件：验证用户输入、获取对应的下载配置，
         /// 并异步下载《求生之路2》（Left 4 Dead 2）所需的插件。
@@ -326,7 +326,6 @@ namespace L4D2AddonInstaller
         /// <param name="e">包含事件数据的 EventArgs 对象。</param>
         private async void btnCodeName_Click(object sender, EventArgs e)
         {
-            // 1. 前置校验
             var code = textBox3CodeName.Text.Trim();
             if (string.IsNullOrEmpty(code))
             {
@@ -338,299 +337,63 @@ namespace L4D2AddonInstaller
                 MessageBox.Show("请先检索/选择L4D2安装路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            if (!IsSteamPathValid())
+            if (!IsSteamPathValid() || !IsL4D2PathValid())
             {
-                MessageBox.Show("Steam路径无效，请确认Steam已安装且路径正确", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (!IsL4D2PathValid())
-            {
-                MessageBox.Show("L4D2路径无效，请确认游戏已安装且路径正确", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Steam或L4D2路径无效，请确认路径正确", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // 2. 初始化状态
             btnCodeName.Enabled = false;
+            buttonCancel.Enabled = true;
             pbDownloadProgress.Value = 0;
             lblDownloadStatus.Text = "正在获取下载配置...";
             textBoxServerInfo.Text = "";
             textBoxConsoleCmd.Text = "";
             labelDownloadPercent.Text = "0%";
             InstallationFinished?.Invoke(this, false);
+
             _cts = new CancellationTokenSource();
             var cancellationToken = _cts.Token;
-
-            // 确定是否需要解压
-            bool IsAutoExtract = false;
+            bool containsArchive = false;
 
             try
             {
-                // 3. 异步获取download.list
-                var downloadListContent = await HttpHelper.GetRemoteTextAsync(DownloadListUrl);
-                if (string.IsNullOrEmpty(downloadListContent))
+                var progress = new Progress<InstallProgressInfo>(info =>
                 {
-                    lblDownloadStatus.Text = "下载配置为空";
-                    return;
-                }
+                    lblDownloadStatus.Text = info.StatusMessage;
+                    pbDownloadProgress.Value = Math.Max(0, Math.Min(100, info.Percent));
+                    labelDownloadPercent.Text = $"{pbDownloadProgress.Value}%";
 
-                // 4. 解析代号对应的配置
-                var addonConfig = SteamLibraryVdfParser.GetAddonConfigByCode(downloadListContent, code);
-                if (addonConfig == null)
-                {
-                    lblDownloadStatus.Text = "未找到该代号的配置";
-                    MessageBox.Show($"未找到代号「{code}」的下载配置", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 5. 提取服务器信息
-                var gameServerHost = addonConfig.TryGetValue("gameServerHost", out var hostObj) ? hostObj.ToString() : "";
-                var gameServerPort = addonConfig.TryGetValue("gameServerPort", out var portObj) ? portObj.ToString() : "";
-                var webServer = addonConfig.TryGetValue("webServer", out var webHostObj) ? webHostObj.ToString() : "";
-                var webPort = addonConfig.TryGetValue("port", out var webPortObj) ? webPortObj.ToString() : "";
-                var protocol = addonConfig.TryGetValue("protocol", out var protoObj) ? protoObj.ToString() : "https";
-                var prefix = addonConfig.TryGetValue("prefix", out var prefixObj) ? prefixObj.ToString() : "";
-
-                // 展示服务器信息
-                if (gameServerPort == "27015")
-                {
-                    textBoxServerInfo.Text = $"{gameServerHost}";
-                    textBoxConsoleCmd.Text = $"connect {gameServerHost}";
-                }
-                else
-                {
-                    textBoxServerInfo.Text = $"{gameServerHost}:{gameServerPort}";
-                    textBoxConsoleCmd.Text = $"connect {gameServerHost}:{gameServerPort}";
-                }
-
-                // 6. 提取addons列表并拼接下载URL
-                var addonPaths = SteamLibraryVdfParser.GetAddonPathsFromConfig(addonConfig);
-                if (!addonPaths.Any())
-                {
-                    lblDownloadStatus.Text = "该代号无需要下载的附加组件";
-                    MessageBox.Show("该代号无需要下载的附加组件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 规范化并构造最终下载项（包含 Uri 与 本地保存路径），避免手工字符串拼接导致错误
-                var downloadItems = new List<Tuple<Uri, string, string>>(); // (uri, fileName, savePath)
-                var skipped = new List<string>();
-                Uri baseUri = null;
-                try
-                {
-                    baseUri = new Uri($"{protocol}://{webServer}:{webPort}/");
-                }
-                catch
-                {
-                    MessageBox.Show("构造服务器地址失败，请检查 webServer、port 与 protocol 配置", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                var normalizedPrefix = (prefix ?? string.Empty).Trim().Trim('/');
-                foreach (var path in addonPaths)
-                {
-                    if (string.IsNullOrWhiteSpace(path))
+                    if (!string.IsNullOrWhiteSpace(info.ServerDisplay))
                     {
-                        skipped.Add(path);
-                        continue;
+                        textBoxServerInfo.Text = info.ServerDisplay;
+                        textBoxConsoleCmd.Text = info.ConnectCommand;
                     }
-                    var p = path.Trim();
-
-                    try
-                    {
-                        Uri finalUri;
-                        if (p.Contains("://"))
-                        {
-                            // 已经是完整 URL
-                            finalUri = new Uri(p);
-                        }
-                        else
-                        {
-                            var rel = p.TrimStart('/');
-                            // 拼接前缀和相对路径（如果前缀为空则直接使用相对路径）
-                            var combined = string.IsNullOrEmpty(normalizedPrefix) ? rel : $"{normalizedPrefix}/{rel}";
-                            finalUri = new Uri(baseUri, combined);
-                        }
-
-                        var fileName = Path.GetFileName(finalUri.LocalPath);
-                        if (string.IsNullOrEmpty(fileName))
-                        {
-                            skipped.Add(p);
-                            continue;
-                        }
-                        var addonsInstallPath = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons");
-                        var addonsInstallPath2 = Path.Combine(textBox1GamePath.Text.Trim(), "l4d2InstallToolDownloads");
-                        if (fileName.EndsWith(".zip") || fileName.EndsWith(".7z")) // 对于压缩包文件，放在addons/l4d2InstallToolDownloads目录下
-                        {
-                            if (!Directory.Exists(addonsInstallPath2))
-                            {
-                                Directory.CreateDirectory(addonsInstallPath2); // 自动创建文件夹
-                            }
-                            addonsInstallPath = addonsInstallPath2;
-                            IsAutoExtract = true;
-                        }
-                        var savePath = Path.Combine(addonsInstallPath, fileName);
-                        downloadItems.Add(Tuple.Create(finalUri, fileName, savePath));
-                    }
-                    catch
-                    {
-                        skipped.Add(p);
-                    }
-                }
-
-                if (downloadItems.Count == 0)
-                {
-                    lblDownloadStatus.Text = "未找到有效的下载条目";
-                    MessageBox.Show("未找到有效的下载条目，可检查download.list或配置格式", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 7. 定义addons安装路径（L4D2目录下的addons文件夹）
-                var addonsInstallFolder = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons");
-                if (!Directory.Exists(addonsInstallFolder))
-                {
-                    Directory.CreateDirectory(addonsInstallFolder); // 自动创建文件夹
-                }
-
-                // 8. 异步并发下载（使用 SemaphoreSlim + Task 管理，替换 Parallel.ForEach + async lambda 的错误用法）
-                buttonCancel.Enabled = true;    // 启用终止功能
-
-                lblDownloadStatus.Text = "开始下载附加组件...";
-                var totalFiles = downloadItems.Count;
-                var downloadedFiles = 0;
-                var filename = "";
-                var progress = new Progress<int>(percent =>
-                {
-                    // 跨线程更新进度条（平均进度）
-                    try
-                    {
-                        double progressValue = (downloadedFiles * 100.0 + percent) / totalFiles;
-                        pbDownloadProgress.Value = (int)Math.Min(progressValue, 100); // 确保进度条的值不超过100
-                        labelDownloadPercent.Text = Math.Round(Math.Min(progressValue, 100.0), 2).ToString() + "%";
-                        lblDownloadStatus.Text = $"正在下载第 {downloadedFiles + 1}/{totalFiles} 个文件: {filename} ...";
-                    }
-                    catch (Exception ex) { Debug.WriteLine($"更新进度条时出错：{ex}"); }
                 });
 
-                var semaphore = new SemaphoreSlim(3); // 最大并发数
-                var tasks = new List<Task>();
-                foreach (var item in downloadItems)
+                var result = await _installService.DownloadAndInstallAsync(code, textBox1GamePath.Text.Trim(), progress, cancellationToken);
+                containsArchive = result.ContainsArchive;
+
+                bool extracted = false;
+                if (containsArchive)
                 {
-                    await semaphore.WaitAsync();
-                    var uri = item.Item1;
-                    filename = item.Item2;
-                    var savePath = item.Item3;
-                    tasks.Add(Task.Run(async () =>
+                    var needExtract = IsOneClickAction || MessageBox.Show("检测到压缩包，请确认是否需要解压？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) == DialogResult.OK;
+                    if (needExtract)
                     {
-                        try
-                        {
-                            await HttpHelper.DownloadFileAsync(uri.ToString(), savePath, cancellationToken, progress);
-
-                            Interlocked.Increment(ref downloadedFiles);
-                            Invoke(new Action(() =>
-                            {
-                                lblDownloadStatus.Text = $"已下载第 {downloadedFiles}/{totalFiles} 个文件：{item.Item2}";
-                            }));
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            // 下载被取消，直接返回
-                            Invoke(new Action(() =>
-                            {
-                                lblDownloadStatus.Text = $"下载已取消。已下载：{downloadedFiles}/{totalFiles} 个文件";
-                            }));
-                        }
-                        catch (Exception ex)
-                        {
-                            // 记录失败但不使整个操作立即崩溃；最终会抛出汇总异常
-                            Invoke(new Action(() =>
-                            {
-                                lblDownloadStatus.Text = $"下载失败：{uri} -> {ex.Message}";
-                            }));
-                            throw new Exception($"下载文件失败（{uri}）：{ex.Message}", ex);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }));
-                }
-
-                // 等待所有任务完成（若有失败，Task.WhenAll 会抛出聚合异常）
-                await Task.WhenAll(tasks);
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    buttonCancel.Enabled = false;
-                    _cts.Dispose();
-                    return;
-                }
-
-                // 9. 下载完成处理
-                if (!IsAutoExtract) lblDownloadStatus.Text = "所有附加组件下载并安装完成！";
-                else lblDownloadStatus.Text = "所有附加组件已下载；检测到压缩包(尚未解压)。";
-                pbDownloadProgress.Value = 100;
-                if (!IsOneClickAction)
-                    MessageBox.Show("附加组件下载安装完成！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // 9.1 解压缩下载到的安装包（若有）
-                bool IsExtractedSuccessfully = false;
-                DialogResult dialogResult = DialogResult.None;
-                if (IsAutoExtract)
-                    if (!IsOneClickAction)
-                        dialogResult = MessageBox.Show("检测到压缩包，请确认是否需要解压？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
-                    else dialogResult = DialogResult.OK;
-                if (dialogResult == DialogResult.OK)
-                {
-                    try
-                    {
-                        if (Directory.Exists(Path.Combine(textBox1GamePath.Text.Trim(), "l4d2InstallToolDownloads")))
-                        {
-                            var downloadedArchives = Directory.GetFiles(
-                                Path.Combine(textBox1GamePath.Text.Trim(), "l4d2InstallToolDownloads"),
-                                "*.*", SearchOption.TopDirectoryOnly)
-                                .Where(f => f.EndsWith(".zip") || f.EndsWith(".7z")).ToArray();
-                            var archiveCount = downloadedArchives.Count();
-                            if (downloadedArchives.Any())
-                            {
-                                var archives = new StringBuilder();
-                                for (int i = 0; i <= archiveCount - 1; i++)
-                                    archives.Append($"{downloadedArchives[i]};");
-                                archives.Length--; // 去掉最后一个分号
-
-                                var request = new ExtractRequest
-                                {
-                                    ArchivePath = archives.ToString(),
-                                    OutputDirPath = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons"),
-                                    SevenZipPath = SevenZipHelper.Default7ZipFullPath(),
-                                    IsAutoExtract = true,
-                                };
-
-                                using (var form = new SevenZipForm(request))
-                                {
-                                    form.ExtractionCompleted += (s, success) =>
-                                    {
-                                        if (success)
-                                            IsExtractedSuccessfully = true;
-                                    };
-                                    form.ShowDialog();
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"解压缩附加组件失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        extracted = OpenExtractDialog(result.DownloadedArchivePaths);
                     }
                 }
-                if (!IsExtractedSuccessfully)
-                    lblDownloadStatus.Text = "所有不需要解压的附加组件已下载并安装完成！";
-                else lblDownloadStatus.Text = "所有附加组件下载并安装完成！";
 
-                // 10. 自动启动游戏（若勾选）
-                if (chkAutoStartGame.Checked && !string.IsNullOrEmpty(gameServerHost) && !string.IsNullOrEmpty(gameServerPort) && (IsAutoExtract ? IsExtractedSuccessfully : true))
+                lblDownloadStatus.Text = extracted ? "所有附加组件下载并安装完成！" : result.StatusMessage;
+
+                if (chkAutoStartGame.Checked && !string.IsNullOrEmpty(result.Host) && !string.IsNullOrEmpty(result.Port) && (!containsArchive || extracted))
                 {
-                    await StartL4D2GameAsync(gameServerHost, gameServerPort);
+                    await StartL4D2GameAsync(result.Host, result.Port);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                lblDownloadStatus.Text = "下载已取消。";
             }
             catch (Exception ex)
             {
@@ -639,11 +402,49 @@ namespace L4D2AddonInstaller
             }
             finally
             {
-                // 恢复按钮状态
                 InstallationFinished?.Invoke(this, true);
                 btnCodeName.Enabled = true;
                 buttonCancel.Enabled = false;
-                _cts.Dispose();
+                _cts?.Dispose();
+                _cts = null;
+            }
+        }
+
+        private bool OpenExtractDialog(IReadOnlyList<string> downloadedArchives)
+        {
+            try
+            {
+                if (downloadedArchives == null || downloadedArchives.Count == 0)
+                    return false;
+
+                var validArchives = downloadedArchives
+                    .Where(File.Exists)
+                    .ToArray();
+
+                if (!validArchives.Any())
+                    return false;
+
+                var request = new ExtractRequest
+                {
+                    ArchivePath = string.Join(";", validArchives),
+                    OutputDirPath = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons"),
+                    SevenZipPath = SevenZipHelper.Default7ZipFullPath(),
+                    IsAutoExtract = true
+                };
+
+                bool success = false;
+                using (var form = new SevenZipForm(request))
+                {
+                    form.ExtractionCompleted += (_, ok) => success = ok;
+                    form.ShowDialog();
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"解压缩附加组件失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
@@ -747,31 +548,11 @@ namespace L4D2AddonInstaller
                     MessageBox.Show("请输入下载代号（如1、231）", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-                var downloadListContent = await HttpHelper.GetRemoteTextAsync(DownloadListUrl);
-                if (string.IsNullOrEmpty(downloadListContent))
-                {
-                    lblDownloadStatus.Text = "下载配置为空";
-                    return;
-                }
-                var addonConfig = SteamLibraryVdfParser.GetAddonConfigByCode(downloadListContent, code);
-                if (addonConfig == null)
-                {
-                    lblDownloadStatus.Text = "未找到该代号的配置";
-                    MessageBox.Show($"未找到代号「{code}」的下载配置", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                var gameServerHost = addonConfig.TryGetValue("gameServerHost", out var hostObj) ? hostObj.ToString() : "";
-                var gameServerPort = addonConfig.TryGetValue("gameServerPort", out var portObj) ? portObj.ToString() : "";
-                if (gameServerPort == "27015")
-                {
-                    textBoxServerInfo.Text = $"{gameServerHost}";
-                    textBoxConsoleCmd.Text = $"connect {gameServerHost}";
-                }
-                else
-                {
-                    textBoxServerInfo.Text = $"{gameServerHost}:{gameServerPort}";
-                    textBoxConsoleCmd.Text = $"connect {gameServerHost}:{gameServerPort}";
-                }
+
+                var info = await _installService.ResolveServerInfoAsync(code, CancellationToken.None);
+                textBoxServerInfo.Text = info.ServerDisplay;
+                textBoxConsoleCmd.Text = info.ConnectCommand;
+                lblDownloadStatus.Text = "服务器信息获取成功";
             }
             catch (Exception ex)
             {

@@ -109,6 +109,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\7ZipHelper.cs" />
+    <Compile Include="Services\IInstallService.cs" />
+    <Compile Include="Services\InstallProgressInfo.cs" />
+    <Compile Include="Services\InstallService.cs" />
     <Compile Include="Parsers\SteamLibraryVdfParser.cs" />
     <Compile Include="UI\7-ZipForm.cs">
       <SubType>Form</SubType>
