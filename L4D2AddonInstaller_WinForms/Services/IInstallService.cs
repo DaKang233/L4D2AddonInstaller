@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace L4D2AddonInstaller.Services
 {
     public interface IInstallService
