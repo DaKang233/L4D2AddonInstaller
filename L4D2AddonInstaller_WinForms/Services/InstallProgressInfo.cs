@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace L4D2AddonInstaller.Services
 {
@@ -19,6 +20,7 @@ namespace L4D2AddonInstaller.Services
         public string Host { get; set; }
         public string Port { get; set; }
         public bool ContainsArchive { get; set; }
+        public IReadOnlyList<string> DownloadedArchivePaths { get; set; }
         public bool IsCompleted { get; set; }
     }
 }

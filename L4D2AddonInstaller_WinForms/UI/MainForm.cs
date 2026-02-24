@@ -380,7 +380,7 @@ namespace L4D2AddonInstaller
                     var needExtract = IsOneClickAction || MessageBox.Show("检测到压缩包，请确认是否需要解压？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) == DialogResult.OK;
                     if (needExtract)
                     {
-                        extracted = OpenExtractDialog();
+                        extracted = OpenExtractDialog(result.DownloadedArchivePaths);
                     }
                 }
 
@@ -410,24 +410,23 @@ namespace L4D2AddonInstaller
             }
         }
 
-        private bool OpenExtractDialog()
+        private bool OpenExtractDialog(IReadOnlyList<string> downloadedArchives)
         {
             try
             {
-                var archiveDir = Path.Combine(textBox1GamePath.Text.Trim(), "l4d2InstallToolDownloads");
-                if (!Directory.Exists(archiveDir))
+                if (downloadedArchives == null || downloadedArchives.Count == 0)
                     return false;
 
-                var downloadedArchives = Directory.GetFiles(archiveDir, "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
+                var validArchives = downloadedArchives
+                    .Where(File.Exists)
                     .ToArray();
 
-                if (!downloadedArchives.Any())
+                if (!validArchives.Any())
                     return false;
 
                 var request = new ExtractRequest
                 {
-                    ArchivePath = string.Join(";", downloadedArchives),
+                    ArchivePath = string.Join(";", validArchives),
                     OutputDirPath = Path.Combine(textBox1GamePath.Text.Trim(), "left4dead2", "addons"),
                     SevenZipPath = SevenZipHelper.Default7ZipFullPath(),
                     IsAutoExtract = true
