@@ -14,7 +14,7 @@ namespace InstallerForL4D2AddonInstaller.Services
         {
             if (versionDetails == null) throw new ArgumentNullException(nameof(versionDetails));
 
-            var installPath = Path.Combine(installRootPath, UI.InstallerForm.InstallerAppName);
+            var installPath = Path.Combine(installRootPath, InstallerForm.InstallerAppName);
             var downloadArchivePath = versionDetails.RelativePath;
             var archiveFileName = Path.GetFileName(downloadArchivePath);
 
