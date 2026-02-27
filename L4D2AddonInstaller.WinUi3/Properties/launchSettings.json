@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "L4D2AddonInstaller.WinUi3 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "L4D2AddonInstaller.WinUi3 (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

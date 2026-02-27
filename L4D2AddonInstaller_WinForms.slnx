@@ -1,6 +1,0 @@
-<Solution>
-  <Folder Name="/解决方案项/">
-    <File Path="LICENSE" />
-  </Folder>
-  <Project Path="L4D2AddonInstaller.Core/L4D2AddonInstaller.Core.csproj" Id="6d3fcc89-92fe-416f-a956-f9cc4f1ba2ac" />
-</Solution>
