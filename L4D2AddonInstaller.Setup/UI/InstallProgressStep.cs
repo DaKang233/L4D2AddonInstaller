@@ -11,14 +11,14 @@ namespace L4D2AddonInstaller
     public partial class InstallProgressStep : UserControl
     {
         private readonly InstallerForm installerForm;
-        private readonly IInstallService installService;
+        private readonly ISetupInstallService installService;
 
         public InstallProgressStep(InstallerForm form)
-            : this(form, new InstallService())
+            : this(form, new SetupInstallService())
         {
         }
 
-        internal InstallProgressStep(InstallerForm form, IInstallService installService)
+        internal InstallProgressStep(InstallerForm form, ISetupInstallService installService)
         {
             InitializeComponent();
             installerForm = form ?? throw new ArgumentNullException(nameof(form));
@@ -54,7 +54,7 @@ namespace L4D2AddonInstaller
             CancellationToken cancellationToken = installerForm.cts.Token;
 
             progressBar.Value = 0;
-            var progress = new Progress<InstallProgressInfo>(info =>
+            var progress = new Progress<SetupInstallProgressInfo>(info =>
             {
                 labelStatus.Text = info.StatusMessage ?? string.Empty;
                 progressBar.Value = Math.Max(0, Math.Min(100, info.Percent));

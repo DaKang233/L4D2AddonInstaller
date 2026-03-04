@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace L4D2AddonInstaller.Services
 {
-    public sealed class InstallService : IInstallService
+    public sealed class AddonInstallService : IAddonInstallService
     {
         private const string DownloadListUrl = "https://furina.dakang233.com:8443/www/l4d2/download.txt";
 
-        public async Task<InstallProgressInfo> ResolveServerInfoAsync(string code, CancellationToken cancellationToken)
+        public async Task<AddonInstallProgressInfo> ResolveServerInfoAsync(string code, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var config = await GetConfigByCodeAsync(code, cancellationToken);
@@ -22,7 +22,7 @@ namespace L4D2AddonInstaller.Services
             return BuildServerInfo(host, port);
         }
 
-        public async Task<InstallProgressInfo> DownloadAndInstallAsync(string code, string gamePath, IProgress<InstallProgressInfo> progress, CancellationToken cancellationToken)
+        public async Task<AddonInstallProgressInfo> DownloadAndInstallAsync(string code, string gamePath, IProgress<AddonInstallProgressInfo> progress, CancellationToken cancellationToken)
         {
             var config = await GetConfigByCodeAsync(code, cancellationToken);
             var host = GetConfigValue(config, "gameServerHost");
@@ -57,7 +57,7 @@ namespace L4D2AddonInstaller.Services
                 {
                     var percent = CalculatePercent(info);
                     var serverInfo = BuildServerInfo(host, port);
-                    progress?.Report(new InstallProgressInfo
+                    progress?.Report(new AddonInstallProgressInfo
                     {
                         Stage = info.IsCompleted ? InstallStage.Completed : InstallStage.Downloading,
                         StatusMessage = info.IsCompleted ? "所有附加组件下载完成。" : $"正在下载 {info.CurrentFileName}",
@@ -127,10 +127,10 @@ namespace L4D2AddonInstaller.Services
             return config.TryGetValue(key, out var value) ? value?.ToString() ?? fallback : fallback;
         }
 
-        private static InstallProgressInfo BuildServerInfo(string host, string port)
+        private static AddonInstallProgressInfo BuildServerInfo(string host, string port)
         {
             var isDefaultPort = string.Equals(port, "27015", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(port);
-            return new InstallProgressInfo
+            return new AddonInstallProgressInfo
             {
                 Host = host,
                 Port = port,

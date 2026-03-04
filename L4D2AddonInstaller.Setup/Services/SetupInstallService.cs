@@ -8,9 +8,9 @@ using static L4D2AddonInstaller.Parsers.SteamLibraryVdfParser;
 
 namespace L4D2AddonInstaller.Services
 {
-    public sealed class InstallService : IInstallService
+    public sealed class SetupInstallService : ISetupInstallService
     {
-        public async Task InstallAsync(string installRootPath, VersionDetails versionDetails, IProgress<InstallProgressInfo> progress, CancellationToken cancellationToken)
+        public async Task InstallAsync(string installRootPath, VersionDetails versionDetails, IProgress<SetupInstallProgressInfo> progress, CancellationToken cancellationToken)
         {
             if (versionDetails == null) throw new ArgumentNullException(nameof(versionDetails));
 
@@ -18,11 +18,11 @@ namespace L4D2AddonInstaller.Services
             var downloadArchivePath = versionDetails.RelativePath;
             var archiveFileName = Path.GetFileName(downloadArchivePath);
 
-            progress?.Report(new InstallProgressInfo { Stage = InstallStage.Preparing, StatusMessage = "准备安装...", Percent = 0 });
+            progress?.Report(new SetupInstallProgressInfo { Stage = InstallStage.Preparing, StatusMessage = "准备安装...", Percent = 0 });
 
             await SevenZipHelper.Download7ZipExeToDirectory(cancellationToken, installPath, new Progress<int>(value =>
             {
-                progress?.Report(new InstallProgressInfo
+                progress?.Report(new SetupInstallProgressInfo
                 {
                     Stage = InstallStage.DownloadingTools,
                     StatusMessage = value >= 100 ? "7-Zip 下载完成。" : "正在下载 7-Zip 组件...",
@@ -40,7 +40,7 @@ namespace L4D2AddonInstaller.Services
                     var downloadedBytesSafe = info.TotalBytes > 0 ? info.TotalBytesDownloaded : info.CurrentFileBytesDownloaded;
                     var percent = totalBytesSafe > 0 ? (int)Math.Min(100, (downloadedBytesSafe * 100M / totalBytesSafe)) : 0;
 
-                    progress?.Report(new InstallProgressInfo
+                    progress?.Report(new SetupInstallProgressInfo
                     {
                         Stage = InstallStage.DownloadingPackage,
                         StatusMessage = info.IsCompleted ? "文件下载完成。" : $"正在下载 {info.CurrentFileName} ({HttpHelper.GetBytesUnitString(info.CurrentFileBytesDownloaded)}/{HttpHelper.GetBytesUnitString(info.CurrentFileTotalBytes)})",
@@ -60,7 +60,7 @@ namespace L4D2AddonInstaller.Services
                 Path.Combine(installPath, "tools", "7z.exe"),
                 new Progress<int>(value =>
                 {
-                    progress?.Report(new InstallProgressInfo
+                    progress?.Report(new SetupInstallProgressInfo
                     {
                         Stage = InstallStage.Extracting,
                         StatusMessage = $"正在解压文件... ({value}%)",
@@ -72,7 +72,7 @@ namespace L4D2AddonInstaller.Services
                 SevenZipHelper.OverwriteMode.OverwriteAll,
                 cancellationToken);
 
-            progress?.Report(new InstallProgressInfo { Stage = InstallStage.Completed, StatusMessage = "安装完成。", Percent = 100, IsCompleted = true });
+            progress?.Report(new SetupInstallProgressInfo { Stage = InstallStage.Completed, StatusMessage = "安装完成。", Percent = 100, IsCompleted = true });
         }
     }
 }

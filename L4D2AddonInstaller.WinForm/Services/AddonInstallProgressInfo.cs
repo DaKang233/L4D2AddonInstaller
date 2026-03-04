@@ -9,7 +9,7 @@ namespace L4D2AddonInstaller.Services
         Completed
     }
 
-    public sealed class InstallProgressInfo
+    public sealed class AddonInstallProgressInfo
     {
         public InstallStage Stage { get; set; }
         public string StatusMessage { get; set; }

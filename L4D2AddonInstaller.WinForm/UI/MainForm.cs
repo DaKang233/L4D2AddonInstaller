@@ -32,7 +32,7 @@ namespace L4D2AddonInstaller
         public static bool IsOneClickAction = false;
         public event EventHandler<bool> InstallationFinished;
         public CancellationTokenSource _cts;
-        private readonly IInstallService _installService = new InstallService();
+        private readonly IAddonInstallService _installService = new AddonInstallService();
 
         // 解压相关全局变量（关闭窗口时保留值）
         public static string ArchivePath = "";
@@ -356,7 +356,7 @@ namespace L4D2AddonInstaller
 
             try
             {
-                var progress = new Progress<InstallProgressInfo>(info =>
+                var progress = new Progress<AddonInstallProgressInfo>(info =>
                 {
                     lblDownloadStatus.Text = info.StatusMessage;
                     pbDownloadProgress.Value = Math.Max(0, Math.Min(100, info.Percent));
