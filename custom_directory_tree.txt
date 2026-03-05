@@ -1,0 +1,130 @@
+E:\Users\14160\source\repos\L4D2AddonInstaller
+├─L4D2AddonInstaller.Core
+│   ├─Connected Services
+│   ├─Helpers
+│   ├─7ZipHelper.cs
+│   ├─HttpHelper.cs
+│   ├─ProcessHelper.cs
+│   ├─ShortcutHelper.cs
+│   └─Universal.cs
+│   ├─Parsers
+│   └─SteamLibraryVdfParser.cs
+│   ├─Properties
+│   └─AssemblyInfo.cs
+│   ├─L4D2AddonInstaller.Core.csproj
+│   ├─app.config
+│   └─packages.config
+├─L4D2AddonInstaller.Core.Modern
+│   ├─Class1.cs
+│   └─L4D2AddonInstaller.Core.Modern.csproj
+├─L4D2AddonInstaller.Setup
+│   ├─Parsers
+│   └─SteamLibraryVdfParser.cs
+│   ├─Properties
+│   ├─AssemblyInfo.cs
+│   ├─Resources.Designer.cs
+│   ├─Resources.resx
+│   ├─Settings.Designer.cs
+│   ├─Settings.settings
+│   └─app.manifest
+│   ├─Services
+│   ├─ISetupInstallService.cs
+│   ├─SetupInstallProgressInfo.cs
+│   └─SetupInstallService.cs
+│   ├─UI
+│   ├─FinishedStep.Designer.cs
+│   ├─FinishedStep.cs
+│   ├─FinishedStep.resx
+│   ├─InstallLicense.Designer.cs
+│   ├─InstallLicense.cs
+│   ├─InstallLicense.resx
+│   ├─InstallPathStep.Designer.cs
+│   ├─InstallPathStep.cs
+│   ├─InstallPathStep.resx
+│   ├─InstallProgressStep.Designer.cs
+│   ├─InstallProgressStep.cs
+│   ├─InstallProgressStep.resx
+│   ├─InstallerForm.Designer.cs
+│   ├─InstallerForm.cs
+│   ├─InstallerForm.resx
+│   ├─WelcomeStep.Designer.cs
+│   ├─WelcomeStep.cs
+│   └─WelcomeStep.resx
+│   ├─App.config
+│   ├─L4D2AddonInstaller.Setup.csproj
+│   ├─Program.cs
+│   └─shell32_00123.ico
+├─L4D2AddonInstaller.WinForm
+│   ├─Assets
+│   └─shell32_00123.ico
+│   ├─Properties
+│   ├─AssemblyInfo.cs
+│   ├─Resources.Designer.cs
+│   ├─Resources.resx
+│   ├─Settings.Designer.cs
+│   ├─Settings.settings
+│   └─app.manifest
+│   ├─Resources
+│   └─C23B9DF5BB4526D0A940A584106A13CC.jpg
+│   ├─Services
+│   ├─AddonInstallProgressInfo.cs
+│   ├─AddonInstallService.cs
+│   └─IAddonInstallService.cs
+│   ├─UI
+│   ├─7-ZipForm.Designer.cs
+│   ├─7-ZipForm.cs
+│   ├─7-ZipForm.resx
+│   ├─AboutForm.Designer.cs
+│   ├─AboutForm.cs
+│   ├─AboutForm.resx
+│   ├─MainForm.Designer.cs
+│   ├─MainForm.cs
+│   └─MainForm.resx
+│   ├─tools
+│   ├─7z.dll
+│   └─7z.exe
+│   ├─App.config
+│   ├─L4D2AddonInstaller.WinForm.csproj
+│   ├─L4D2AddonInstaller.WinForm.csproj.user
+│   ├─Program.cs
+│   ├─authorImage.jpg
+│   ├─mykey.pfx
+│   └─packages.config
+├─L4D2AddonInstaller.WinUi3
+│   ├─Assets
+│   ├─LockScreenLogo.scale-200.png
+│   ├─SplashScreen.scale-200.png
+│   ├─Square150x150Logo.scale-200.png
+│   ├─Square44x44Logo.scale-200.png
+│   ├─Square44x44Logo.targetsize-24_altform-unplated.png
+│   ├─StoreLogo.png
+│   └─Wide310x150Logo.scale-200.png
+│   ├─Properties
+│   ├─PublishProfiles
+│   ├─win-arm64.pubxml
+│   ├─win-x64.pubxml
+│   └─win-x86.pubxml
+│   └─launchSettings.json
+│   ├─App.xaml
+│   ├─App.xaml.cs
+│   ├─L4D2AddonInstaller.WinUi3.csproj
+│   ├─L4D2AddonInstaller.WinUi3.csproj.user
+│   ├─MainWindow.xaml
+│   ├─MainWindow.xaml.cs
+│   ├─Package.appxmanifest
+│   └─app.manifest
+├─PDF
+│   ├─(Installer)FinishedStep.cs.pdf
+│   ├─(Installer)InstallerForm.cs.pdf
+│   ├─(Installer)IntallLicense.cs.pdf
+│   ├─(Installer)IntallPathStep.cs.pdf
+│   ├─(Installer)IntallProgressStep.cs.pdf
+│   ├─(Installer)SteamLibraryVdfParser.cs.pdf
+│   └─7ZipHelper.cs.pdf
+├─.gitattributes
+├─.gitignore
+├─L4D2AddonInstaller.slnx
+├─LICENSE
+├─README.md
+├─tree_generate.py
+└─tree_generate_ast.py
