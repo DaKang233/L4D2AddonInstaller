@@ -108,9 +108,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\IInstallService.cs" />
-    <Compile Include="Services\InstallProgressInfo.cs" />
-    <Compile Include="Services\InstallService.cs" />
+    <Compile Include="Services\IAddonInstallService.cs" />
+    <Compile Include="Services\AddonInstallProgressInfo.cs" />
+    <Compile Include="Services\AddonInstallService.cs" />
     <Compile Include="UI\7-ZipForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -54,9 +54,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Services\IInstallService.cs" />
-    <Compile Include="Services\InstallProgressInfo.cs" />
-    <Compile Include="Services\InstallService.cs" />
+    <Compile Include="Services\ISetupInstallService.cs" />
+    <Compile Include="Services\SetupInstallProgressInfo.cs" />
+    <Compile Include="Services\SetupInstallService.cs" />
     <Compile Include="UI\FinishedStep.cs">
       <SubType>UserControl</SubType>
     </Compile>

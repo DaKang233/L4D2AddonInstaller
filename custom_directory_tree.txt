@@ -15,6 +15,8 @@ E:\Users\14160\source\repos\L4D2AddonInstaller
 │   ├─app.config
 │   └─packages.config
 ├─L4D2AddonInstaller.Core.Modern
+│   ├─Helpers
+│   ├─Parsers
 │   ├─Class1.cs
 │   └─L4D2AddonInstaller.Core.Modern.csproj
 ├─L4D2AddonInstaller.Setup
@@ -98,7 +100,8 @@ E:\Users\14160\source\repos\L4D2AddonInstaller
 │   ├─Square44x44Logo.scale-200.png
 │   ├─Square44x44Logo.targetsize-24_altform-unplated.png
 │   ├─StoreLogo.png
-│   └─Wide310x150Logo.scale-200.png
+│   ├─Wide310x150Logo.scale-200.png
+│   └─appImage.png
 │   ├─Properties
 │   ├─PublishProfiles
 │   ├─win-arm64.pubxml
@@ -126,5 +129,7 @@ E:\Users\14160\source\repos\L4D2AddonInstaller
 ├─L4D2AddonInstaller.slnx
 ├─LICENSE
 ├─README.md
+├─appImage.png
+├─custom_directory_tree.txt
 ├─tree_generate.py
 └─tree_generate_ast.py
