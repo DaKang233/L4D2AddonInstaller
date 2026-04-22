@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="L4D2AddonInstaller.WinUi3.Views.InstallPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:L4D2AddonInstaller.WinUi3.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Padding="16" Spacing="12">
+
+                <Expander Header="代号下载与安装" IsExpanded="True">
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBox Header="下载代号" PlaceholderText="例如 1、231" Text="{Binding CodeName, Mode=TwoWay}" />
+                        <TextBox Header="服务器信息" Text="{Binding ServerInfo}" IsReadOnly="True" />
+                        <TextBox Header="控制台连接命令" Text="{Binding ConsoleCommand}" IsReadOnly="True" />
+                        <CheckBox Content="安装完成后自动启动游戏" IsChecked="{Binding AutoStartGame, Mode=TwoWay}" />
+
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" />
+                        <TextBlock Text="{Binding StatusMessage}" />
+                        <TextBlock Text="{Binding DownloadPercentText}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="获取服务器信息" Command="{Binding ResolveServerInfoCommand}" />
+                            <Button Content="下载并安装" Command="{Binding InstallByCodeCommand}" />
+                            <Button Content="取消下载" Command="{Binding CancelDownloadCommand}" IsEnabled="{Binding CanCancelDownload}" />
+                            <Button Content="一键完成" Command="{Binding OneClickFinishAllCommand}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="启动 Steam" Command="{Binding StartSteamCommand}" />
+                            <Button Content="启动游戏" Command="{Binding StartGameCommand}" />
+                            <Button Content="打开压缩包下载目录" Command="{Binding OpenArchiveDownloadFolderCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="L4D2AddonInstaller.WinUi3.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:L4D2AddonInstaller.WinUi3.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Padding="16" Spacing="12">
+                <TextBlock FontSize="22" FontWeight="SemiBold" Text="《求生之路2》附加组件安装器" />
+
+                <Expander Header="路径设置" IsExpanded="True">
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBox Header="Steam 路径" Text="{Binding SteamPath, Mode=TwoWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="浏览 Steam" Command="{Binding BrowseSteamPathCommand}" />
+                            <Button Content="自动检索 Steam" Command="{Binding DetectSteamPathCommand}" />
+                        </StackPanel>
+
+                        <TextBox Header="L4D2 路径" Text="{Binding GamePath, Mode=TwoWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="浏览 L4D2" Command="{Binding BrowseGamePathCommand}" />
+                            <Button Content="自动检索 L4D2" Command="{Binding DetectGamePathCommand}" />
+                            <Button Content="一键检索路径" Command="{Binding DetectAllPathCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
