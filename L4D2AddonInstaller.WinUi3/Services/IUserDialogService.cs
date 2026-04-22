@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 namespace L4D2AddonInstaller.WinUi3.Services;
 
 public interface IUserDialogService

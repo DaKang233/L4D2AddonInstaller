@@ -1,8 +1,12 @@
 using L4D2AddonInstaller.WinUi3.Infrastructure;
+using L4D2AddonInstaller.WinUi3.Models;
 using L4D2AddonInstaller.WinUi3.Services;
 using L4D2AddonInstaller.WinUi3.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 
 namespace L4D2AddonInstaller.WinUi3;
@@ -14,6 +18,7 @@ public sealed partial class MainWindow : Window, IUserDialogService, IFileDialog
     public MainWindow()
     {
         InitializeComponent();
+        ExtendsContentIntoTitleBar = true;
         Title = $"《求生之路 2》附加组件安装器 v{typeof(App).Assembly.GetName().Version}";
 
         ViewModel = new MainViewModel(
@@ -23,7 +28,29 @@ public sealed partial class MainWindow : Window, IUserDialogService, IFileDialog
             this,
             this);
 
-        DataContext = ViewModel;
+        if (Content is FrameworkElement fe)
+            fe.DataContext = ViewModel;
+    }
+
+    private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.SelectedItem is NavigationViewItem item)
+        {
+            switch (item.Tag)
+            {
+                case "home":
+                    ContentFrame.Navigate(typeof(Views.HomePage));
+                    break;
+
+                case "install":
+                    ContentFrame.Navigate(typeof(Views.InstallPage));
+                    break;
+
+                case "extract":
+                    ContentFrame.Navigate(typeof(Views.ExtractPage));
+                    break;
+            }
+        }
     }
 
     public async Task ShowInfoAsync(string title, string message)

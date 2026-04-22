@@ -2,6 +2,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using L4D2AddonInstaller.WinUi3.Models;
 using L4D2AddonInstaller.WinUi3.Services;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
+using System;
+using System.Linq;
 
 namespace L4D2AddonInstaller.WinUi3.ViewModels;
 
@@ -16,24 +22,24 @@ public partial class MainViewModel : ObservableObject
     private CancellationTokenSource? _downloadCts;
     private CancellationTokenSource? _extractCts;
 
-    [ObservableProperty] private string steamPath = string.Empty;
-    [ObservableProperty] private string gamePath = string.Empty;
-    [ObservableProperty] private string codeName = string.Empty;
-    [ObservableProperty] private string serverInfo = string.Empty;
-    [ObservableProperty] private string consoleCommand = string.Empty;
-    [ObservableProperty] private string statusMessage = "就绪";
-    [ObservableProperty] private bool autoStartGame;
-    [ObservableProperty] private bool isBusy;
-    [ObservableProperty] private bool canCancelDownload;
-    [ObservableProperty] private int downloadPercent;
-
-    [ObservableProperty] private string archivePaths = string.Empty;
-    [ObservableProperty] private string sevenZipPath = string.Empty;
-    [ObservableProperty] private string outputDir = string.Empty;
-    [ObservableProperty] private int extractPercent;
-    [ObservableProperty] private OverwriteMode overwriteMode = OverwriteMode.OverwriteAll;
-
+    [ObservableProperty] public partial string SteamPath { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GamePath { get; set; } = string.Empty;
+    [ObservableProperty] public partial string CodeName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ServerInfo { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ConsoleCommand { get; set; } = string.Empty;
+    [ObservableProperty] public partial string StatusMessage { get; set; } = "就绪";
+    [ObservableProperty] public partial bool AutoStartGame { get; set; }
+    [ObservableProperty] public partial bool IsBusy { get; set; }
+    [ObservableProperty] public partial bool CanCancelDownload { get; set; }
+    [ObservableProperty] public partial int DownloadPercent { get; set; }
+    [ObservableProperty] public partial string ArchivePaths { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SevenZipPath { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OutputDir { get; set; } = string.Empty;
+    [ObservableProperty] public partial int ExtractPercent { get; set; }
+    [ObservableProperty] public partial OverwriteMode OverwriteMode { get; set; } = OverwriteMode.OverwriteAll;
     public IReadOnlyList<OverwriteMode> OverwriteModes { get; } = Enum.GetValues<OverwriteMode>();
+    public string DownloadPercentText { get; set; } = $"下载进度: ";
+    public string ExtractPercentText { get; set; } = $"解压进度: ";
 
     public MainViewModel(AddonInstallService installService, SevenZipService sevenZipService, SystemIntegrationService systemService, IUserDialogService dialogService, IFileDialogService fileDialogService)
     {
@@ -176,6 +182,7 @@ public partial class MainViewModel : ObservableObject
             {
                 StatusMessage = p.StatusMessage;
                 DownloadPercent = Math.Clamp(p.Percent, 0, 100);
+                DownloadPercentText = $"下载进度: {DownloadPercent}%";
                 if (!string.IsNullOrWhiteSpace(p.ServerDisplay))
                 {
                     ServerInfo = p.ServerDisplay;
@@ -335,7 +342,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             StatusMessage = "正在解压缩...";
-            await _sevenZipService.ExtractAsync(files, OutputDir, SevenZipPath, OverwriteMode, _extractCts.Token, new Progress<int>(p => ExtractPercent = p));
+            await _sevenZipService.ExtractAsync(files, OutputDir, SevenZipPath, OverwriteMode, _extractCts.Token, new Progress<int>(p => { ExtractPercent = p; ExtractPercentText = $"解压进度: {p}%"; }));
             StatusMessage = "解压缩完成。";
             return true;
         }

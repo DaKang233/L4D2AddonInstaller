@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="L4D2AddonInstaller.WinUi3.Views.ExtractPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:L4D2AddonInstaller.WinUi3.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Padding="16" Spacing="12">
+
+                <Expander Header="7-Zip 解压工具 (Modern)" IsExpanded="True">
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBox Header="压缩包路径（多个用 ; 分隔）" Text="{Binding ArchivePaths, Mode=TwoWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="选择压缩包" Command="{Binding BrowseArchivesCommand}" />
+                        </StackPanel>
+
+                        <TextBox Header="7z.exe 路径" Text="{Binding SevenZipPath, Mode=TwoWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="浏览 7z.exe" Command="{Binding BrowseSevenZipCommand}" />
+                            <Button Content="自动检索 7z" Command="{Binding DetectSevenZipCommand}" />
+                            <Button Content="下载 7z 组件" Command="{Binding DownloadSevenZipCommand}" />
+                        </StackPanel>
+
+                        <TextBox Header="输出目录" Text="{Binding OutputDir, Mode=TwoWay}" />
+                        <Button Content="浏览输出目录" Command="{Binding BrowseOutputDirCommand}" HorizontalAlignment="Left" />
+
+                        <ComboBox Header="覆盖模式" ItemsSource="{Binding OverwriteModes}" SelectedItem="{Binding OverwriteMode, Mode=TwoWay}" />
+
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding ExtractPercent}" />
+                        <TextBlock Text="{Binding ExtractPercentText}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="开始解压" Command="{Binding ExtractArchivesCommand}" />
+                            <Button Content="取消解压" Command="{Binding CancelExtractCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

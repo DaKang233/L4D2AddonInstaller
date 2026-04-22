@@ -1,4 +1,10 @@
 using L4D2AddonInstaller.WinUi3.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace L4D2AddonInstaller.WinUi3.Services;
 

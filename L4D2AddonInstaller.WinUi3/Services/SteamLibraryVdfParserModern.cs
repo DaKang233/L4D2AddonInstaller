@@ -1,4 +1,9 @@
 using System.Text;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
 
 namespace L4D2AddonInstaller.WinUi3.Services;
 
@@ -152,6 +157,7 @@ public static class SteamLibraryVdfParserModern
     {
         try
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             return Encoding.GetEncoding("GB18030");
         }
         catch

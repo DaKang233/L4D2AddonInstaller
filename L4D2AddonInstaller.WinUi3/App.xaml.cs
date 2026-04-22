@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using L4D2AddonInstaller.WinUi3.Services;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -35,6 +36,19 @@ namespace L4D2AddonInstaller.WinUi3
         public App()
         {
             InitializeComponent();
+            this.UnhandledException += async (s, e) =>
+            {
+                e.Handled = true;
+
+                var msg = e.Exception.Message;
+                System.Diagnostics.Debug.WriteLine(e.Exception);
+
+                // 如果能拿到窗口/服务，就弹窗
+                if (_window is IUserDialogService dlg)
+                {
+                    await dlg.ShowErrorAsync("未处理异常", msg);
+                }
+            };
         }
 
         /// <summary>

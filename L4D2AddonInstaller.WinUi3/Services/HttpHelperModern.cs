@@ -1,4 +1,10 @@
 namespace L4D2AddonInstaller.WinUi3.Services;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 public static class HttpHelperModern
 {

@@ -1,3 +1,4 @@
+using System;
 using WinRT.Interop;
 
 namespace L4D2AddonInstaller.WinUi3.Infrastructure;
